@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitAny": false,
+    "noFallthroughCasesInSwitch": false,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./SRC/*", "./src/*"],
+      "@/components/*": ["./SRC/Components/*", "./src/components/*"],
+  "@/Components/*": ["./SRC/Components/*", "./src/components/*"],
+      "@/lib/*": ["./SRC/Lib/*", "./src/lib/*"],
+      "@/Lib/*": ["./SRC/Lib/*", "./src/lib/*"],
+      "@/data/*": ["./SRC/Data/*", "./src/data/*"],
+      "@/Data/*": ["./SRC/Data/*", "./src/data/*"],
+      "@/hooks/*": ["./SRC/Hooks/*", "./src/hooks/*"],
+      "@/Hooks/*": ["./SRC/Hooks/*", "./src/hooks/*"]
+    }
+  },
+  "include": ["SRC", "src"]
+}
