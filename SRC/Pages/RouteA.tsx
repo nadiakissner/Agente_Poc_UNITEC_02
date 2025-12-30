@@ -858,7 +858,8 @@ export default function RouteA() {
         )}
         
         {/* HISTORIAL CONVERSACIÓN GENERAL */}
-        {conversationHistory.length > 0 && (
+        {/* Solo mostrar si NO está en derivación a Alex */}
+        {conversationHistory.length > 0 && feedbackMsg !== "pending_alex_connection" && (
           <div className="space-y-3 pb-4">
             {conversationHistory.map((msg, idx) => (
               <ChatBubble key={idx} sender={msg.sender} message={msg.message} />

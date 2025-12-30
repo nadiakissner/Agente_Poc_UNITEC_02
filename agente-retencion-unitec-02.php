@@ -509,28 +509,49 @@ function gero_construir_system_prompt_unitec_02( WP_REST_Request $request ) {
     $nombre = $usuario->nombre;
     $carrera = $usuario->carrera;
     
+    // ======= 🔍 DETECTAR SI YA HA HABIDO SALUDO PREVIO =======
+    $tabla_interacciones = 'byw_coach_interacciones';
+    $interacciones_previas = $wpdb->get_results( $wpdb->prepare(
+        "SELECT contenido FROM $tabla_interacciones WHERE user_id = %d AND tipo_interaccion = 'interaccion_agente' ORDER BY fecha_creacion DESC LIMIT 10",
+        $user_id
+    ) );
+    
+    $ya_ha_saludado = false;
+    if ( ! empty( $interacciones_previas ) ) {
+        foreach ( $interacciones_previas as $interaccion ) {
+            $contenido = json_decode( $interaccion->contenido, true );
+            if ( isset( $contenido['agente'] ) ) {
+                $respuesta_agente = strtolower( $contenido['agente'] );
+                if ( preg_match( '/^\s*(hola|buenos|saludos|qué tal|cómo estás|hey)\b/i', $respuesta_agente ) ) {
+                    $ya_ha_saludado = true;
+                    break;
+                }
+            }
+        }
+    }
+    
+    $instruccion_saludo = ! $ya_ha_saludado 
+        ? "Si es el primer mensaje: Comienza con un breve saludo (máximo 5 palabras) y luego directo al punto."
+        : "No saludes de nuevo. Ve directo al tema, continuando el flujo previo.";
+    
     $system_prompt = <<<PROMPT
-Eres el agente de retención y acompañamiento Gero. $nombre es un estudiante de la carrera de $carrera, con matrícula $matricula, y tu misión es ayudarlo a comprender su situación académica, emocional o contextual, validar las hipótesis detectadas por la encuesta de caracterización que realizó al matricularse, profundizar en la causa real y ofrecerle pasos concretos de mejora.
+Eres Gero, agente de retención de UNITEC. $nombre es estudiante de $carrera, matrícula $matricula.
 
-HIPÓTESIS DE RIESGO IDENTIFICADAS (ordenadas de mayor a menor relevancia):
+HIPÓTESIS DE RIESGO (ordenadas por relevancia):
 $riesgos_lista
 
-CONTEXTO DEL ESTUDIANTE (basado en respuestas del cuestionario):
+CONTEXTO:
 $resumen_respuestas
 
-INSTRUCCIONES GENERALES:
-- Tu tono es cálido, profesional, humano, cercano y motivador.
-- No actúas como chatbot: actúas como un consejero académico real.
-- Comienza por la primera hipótesis de la lista y úsala como punto de partida para iniciar la conversación.
-- Solo pasa a la siguiente hipótesis si el estudiante descarta claramente la anterior o no se reconoce en ella.
-- No menciones nunca los nombres técnicos de las hipótesis ni la existencia de esta lista al estudiante.
-- Primero valida la hipótesis: Sí / En parte / No.
-- Si la confirma → profundiza y ofrece intervención.
-- Si la confirma en parte → clarifica qué partes aplican y continúa con intervención.
-- Si la descarta → explora la alternativa más relevante.
-- Tus respuestas nunca deben sonar genéricas. Usa contenido adaptado a cada hipótesis.
-- Siempre ofrece un plan breve de 2 o 3 acciones concretas.
-- Siempre cierra la interacción con una pregunta abierta que invite al acompañamiento.
+INSTRUCCIONES CRÍTICAS:
+- BREVEDAD EXTREMA: Máximo 30 palabras por respuesta. Si es necesario extenderse, máximo 50-60 palabras.
+- $instruccion_saludo
+- Continúa fluidamente: Si ya hay conversación previa, sigue el hilo sin repetir información.
+- Valida hipótesis: ¿Sí? ¿En parte? ¿No?
+- Si confirma → profundiza brevemente y ofrece 1-2 acciones concretas.
+- Si descarta → explora siguiente hipótesis.
+- Cierra siempre con pregunta abierta breve.
+- Tono: Cálido, profesional, motivador.
 PROMPT;
     
     // ======= ✅ RETORNAR SYSTEM_PROMPT =======
@@ -1475,29 +1496,27 @@ if ( ! function_exists( 'gero_chat_openai_agente_unitec' ) ) {
         }
         
         $instruccion_saludo = $debe_saludar 
-            ? "Comienza con un breve saludo (máximo 10 palabras) y luego desarrolla tu respuesta."
-            : "No saludes. Ve directo al punto.";
+            ? "Si es el primer mensaje: Comienza con saludo muy breve (máximo 5 palabras), luego directo al punto."
+            : "NO saludes. Ve directo al punto continuando el flujo previo.";
         
         $system_prompt = <<<PROMPT
-Eres Gero, agente de retención de UNITEC. $nombre es un estudiante de $carrera, matrícula $matricula.
+Eres Gero, agente de retención de UNITEC. $nombre, estudiante de $carrera, matrícula $matricula.
 
-HIPÓTESIS DE RIESGO (ordenadas por relevancia):
+HIPÓTESIS (ordenadas por relevancia):
 $riesgos_lista
 
-CONTEXTO DEL ESTUDIANTE:
+CONTEXTO:
 $resumen_respuestas
 
-INSTRUCCIONES:
-- Tono cálido, profesional y motivador.
-- Respuestas BREVES: máximo 50-60 palabras (300 caracteres).
+INSTRUCCIONES CRÍTICAS:
+- MÁXIMA BREVEDAD: Preferiblemente 30 palabras. Máximo absoluto 50-60 palabras.
 - $instruccion_saludo
-- Comienza por la primera hipótesis como punto de partida.
-- Valida la hipótesis: ¿Sí? ¿En parte? ¿No?
-- Si confirma → profundiza y ofrece 1-2 acciones concretas.
-- Si descarta → explora la siguiente hipótesis.
-- Cierra SIEMPRE con una pregunta abierta breve.
-- No uses nombres técnicos de hipótesis.
-- SÍ sé conciso y directo.
+- Continúa fluidamente: Si hay conversación previa, mantén el hilo sin repetir.
+- Valida hipótesis: ¿Sí/En parte/No?
+- Confirma → profundiza y 1-2 acciones concretas.
+- Descarta → siguiente hipótesis.
+- Pregunta abierta breve al cierre.
+- Tono: Cálido, profesional, motivador.
 PROMPT;
         
         // ======= 📝 CONSTRUIR MENSAJES PARA OpenAI - INCLUIR HISTORIAL =======
