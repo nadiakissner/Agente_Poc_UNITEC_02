@@ -93,6 +93,10 @@ export default {
         "dot-bounce": {
           "0%, 80%, 100%": { transform: "translateY(0)" },
           "40%": { transform: "translateY(-8px)" }
+        },
+        "scale-pulse": {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.3)" }
         }
       },
       animation: {
@@ -101,7 +105,8 @@ export default {
         "fade-slide-up": "fade-slide-up 0.3s ease-out",
         "chip-press": "chip-press 0.15s ease-in-out",
         "ripple": "ripple 0.6s ease-out",
-        "dot-bounce": "dot-bounce 1.4s infinite ease-in-out"
+        "dot-bounce": "dot-bounce 1.4s infinite ease-in-out",
+        "scale-pulse": "scale-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite"
       },
     },
   },

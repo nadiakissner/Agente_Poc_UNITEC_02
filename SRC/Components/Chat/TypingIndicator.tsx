@@ -3,7 +3,6 @@ export function TypingIndicator() {
     <div className="flex justify-start mb-4 animate-in fade-in duration-300">
       <div className="max-w-[85%] rounded-2xl rounded-bl-none px-4 py-3 bg-chat-bubble-agent">
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">Conectando</span>
           <div className="flex space-x-1">
             <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-dot-bounce" style={{ animationDelay: '0ms' }}></div>
             <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-dot-bounce" style={{ animationDelay: '150ms' }}></div>

@@ -17,13 +17,13 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 15%;
 
-    /* UDLA Orange - Primary Brand Color */
-    --primary: 24 100% 50%;
+    /* UNITEC Blue - Primary Brand Color */
+    --primary: 215 100% 32%;
     --primary-foreground: 0 0% 100%;
     
-    /* UDLA Orange variants */
-    --primary-light: 24 100% 60%;
-    --primary-dark: 24 100% 40%;
+    /* UNITEC Blue variants */
+    --primary-light: 215 100% 50%;
+    --primary-dark: 215 100% 20%;
 
     --secondary: 0 0% 96%;
     --secondary-foreground: 0 0% 15%;
@@ -39,7 +39,7 @@ All colors MUST be HSL.
 
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 24 100% 50%;
+    --ring: 215 100% 32%;
 
     /* Emotional states for questionnaire */
     --success: 142 71% 45%;
@@ -50,13 +50,13 @@ All colors MUST be HSL.
 
     /* Chat specific */
     --chat-bubble-agent: 0 0% 96%;
-    --chat-bubble-user: 24 100% 96%;
+    --chat-bubble-user: 215 100% 95%;
     
     /* Smooth transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .dark {
+  #agente-unitec-root.dark {
     --background: 0 0% 10%;
     --foreground: 0 0% 95%;
 
@@ -66,7 +66,7 @@ All colors MUST be HSL.
     --popover: 0 0% 12%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 24 100% 50%;
+    --primary: 215 100% 32%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 15%;
@@ -83,19 +83,97 @@ All colors MUST be HSL.
 
     --border: 0 0% 20%;
     --input: 0 0% 20%;
-    --ring: 24 100% 50%;
+    --ring: 215 100% 32%;
     
     --chat-bubble-agent: 0 0% 15%;
-    --chat-bubble-user: 24 100% 15%;
+    --chat-bubble-user: 215 100% 15%;
+  }
+}
+
+/* Mobile-First Responsive Utilities */
+@layer base {
+  /* Input/Textarea base text size (prevents iOS zoom on focus) */
+  #agente-unitec-root input,
+  #agente-unitec-root textarea,
+  #agente-unitec-root select {
+    @apply text-base sm:text-base;
+  }
+
+  /* Touch-friendly minimum tap target size */
+  #agente-unitec-root button,
+  #agente-unitec-root a,
+  #agente-unitec-root [role="button"] {
+    @apply min-h-11 min-w-11 flex items-center justify-center;
+  }
+
+  /* Container max-width patterns */
+  #agente-unitec-root .container-sm {
+    @apply max-w-sm mx-auto;
+  }
+
+  #agente-unitec-root .container-md {
+    @apply max-w-2xl mx-auto;
+  }
+
+  #agente-unitec-root .container-lg {
+    @apply max-w-4xl mx-auto;
+  }
+
+  /* Responsive padding container */
+  #agente-unitec-root .px-responsive {
+    @apply px-3 sm:px-4 md:px-6 lg:px-8;
+  }
+
+  #agente-unitec-root .py-responsive {
+    @apply py-3 sm:py-4 md:py-6 lg:py-8;
+  }
+
+  #agente-unitec-root .p-responsive {
+    @apply p-3 sm:p-4 md:p-6 lg:p-8;
+  }
+
+  /* Responsive gap */
+  #agente-unitec-root .gap-responsive {
+    @apply gap-2 sm:gap-3 md:gap-4 lg:gap-6;
+  }
+
+  #agente-unitec-root .space-y-responsive {
+    @apply space-y-2 sm:space-y-3 md:space-y-4 lg:space-y-6;
+  }
+
+  /* Responsive typography */
+  #agente-unitec-root .text-responsive-sm {
+    @apply text-xs sm:text-sm md:text-base;
+  }
+
+  #agente-unitec-root .text-responsive-base {
+    @apply text-sm sm:text-base md:text-lg;
+  }
+
+  #agente-unitec-root .text-responsive-lg {
+    @apply text-base sm:text-lg md:text-xl;
+  }
+
+  #agente-unitec-root .text-responsive-xl {
+    @apply text-lg sm:text-xl md:text-2xl;
+  }
+
+  #agente-unitec-root .text-responsive-2xl {
+    @apply text-xl sm:text-2xl md:text-3xl;
   }
 }
 
 @layer base {
-  * {
+  #agente-unitec-root * {
     @apply border-border;
   }
 
-  body {
+  #agente-unitec-root {
     @apply bg-background text-foreground;
+    /* Ensure smooth scrolling on mobile */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scrollbar-gutter: stable;
   }
 }
+

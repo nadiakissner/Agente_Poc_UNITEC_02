@@ -1,3 +1,101 @@
+/* SLIDER STYLES - RESET COMPLETO Y ESPECÍFICO */
+
+/* Reset del input range en todos los navegadores */
+input[type="range"],
+main input[type="range"],
+.mt-4 input[type="range"] {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  width: 100% !important;
+  height: 4px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  background: transparent !important;
+  outline: none !important;
+  cursor: pointer !important;
+  display: block !important;
+}
+
+/* Webkit (Chrome, Safari, Edge) */
+input[type="range"]::-webkit-slider-thumb,
+main input[type="range"]::-webkit-slider-thumb,
+.mt-4 input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 16px !important;
+  height: 16px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 50% !important;
+  background: #3b82f6 !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.2s ease !important;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover,
+main input[type="range"]::-webkit-slider-thumb:hover,
+.mt-4 input[type="range"]::-webkit-slider-thumb:hover {
+  background: #2563eb !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3) !important;
+  transform: scale(1.1) !important;
+}
+
+input[type="range"]::-webkit-slider-runnable-track,
+main input[type="range"]::-webkit-slider-runnable-track,
+.mt-4 input[type="range"]::-webkit-slider-runnable-track {
+  width: 100% !important;
+  height: 4px !important;
+  background: #e5e7eb !important;
+  border-radius: 9999px !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* Mozilla Firefox */
+input[type="range"]::-moz-range-thumb,
+main input[type="range"]::-moz-range-thumb,
+.mt-4 input[type="range"]::-moz-range-thumb {
+  width: 16px !important;
+  height: 16px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 50% !important;
+  background: #3b82f6 !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.2s ease !important;
+}
+
+input[type="range"]::-moz-range-thumb:hover,
+main input[type="range"]::-moz-range-thumb:hover,
+.mt-4 input[type="range"]::-moz-range-thumb:hover {
+  background: #2563eb !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+input[type="range"]::-moz-range-track,
+main input[type="range"]::-moz-range-track,
+.mt-4 input[type="range"]::-moz-range-track {
+  background: transparent !important;
+  border: none !important;
+}
+
+input[type="range"]::-moz-range-progress,
+main input[type="range"]::-moz-range-progress,
+.mt-4 input[type="range"]::-moz-range-progress {
+  background-color: #3b82f6 !important;
+  height: 4px !important;
+  border-radius: 9999px !important;
+}
+
+
+
 #root {
   max-width: 1280px;
   margin: 0 auto;

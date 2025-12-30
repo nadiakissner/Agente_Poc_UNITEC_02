@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" width="200" height="80">
+  <!-- Fondo azul UNITEC -->
+  <rect width="200" height="80" fill="none"/>
+  
+  <!-- Logo - Cuadrado con U -->
+  <rect x="10" y="15" width="50" height="50" fill="#003d7a" rx="4"/>
+  <text x="35" y="55" font-size="40" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial, sans-serif">U</text>
+  
+  <!-- Texto UNITEC -->
+  <text x="70" y="45" font-size="32" font-weight="bold" fill="#003d7a" font-family="Arial, sans-serif">UNITEC</text>
+  
+  <!-- Subtexto -->
+  <text x="70" y="65" font-size="12" fill="#666" font-family="Arial, sans-serif">Universidad Tecnológica</text>
+</svg>

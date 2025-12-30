@@ -17,13 +17,13 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 15%;
 
-    /* UDLA Orange - Primary Brand Color */
-    --primary: 24 100% 50%;
+    /* UNITEC Blue - Primary Brand Color */
+    --primary: 215 100% 32%;
     --primary-foreground: 0 0% 100%;
     
-    /* UDLA Orange variants */
-    --primary-light: 24 100% 60%;
-    --primary-dark: 24 100% 40%;
+    /* UNITEC Blue variants */
+    --primary-light: 215 100% 50%;
+    --primary-dark: 215 100% 20%;
 
     --secondary: 0 0% 96%;
     --secondary-foreground: 0 0% 15%;
@@ -39,7 +39,7 @@ All colors MUST be HSL.
 
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 24 100% 50%;
+    --ring: 215 100% 32%;
 
     /* Emotional states for questionnaire */
     --success: 142 71% 45%;
@@ -50,7 +50,7 @@ All colors MUST be HSL.
 
     /* Chat specific */
     --chat-bubble-agent: 0 0% 96%;
-    --chat-bubble-user: 24 100% 96%;
+    --chat-bubble-user: 215 100% 95%;
     
     /* Smooth transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -66,7 +66,7 @@ All colors MUST be HSL.
     --popover: 0 0% 12%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 24 100% 50%;
+    --primary: 215 100% 32%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 15%;
@@ -83,10 +83,10 @@ All colors MUST be HSL.
 
     --border: 0 0% 20%;
     --input: 0 0% 20%;
-    --ring: 24 100% 50%;
+    --ring: 215 100% 32%;
     
     --chat-bubble-agent: 0 0% 15%;
-    --chat-bubble-user: 24 100% 15%;
+    --chat-bubble-user: 215 100% 15%;
   }
 }
 

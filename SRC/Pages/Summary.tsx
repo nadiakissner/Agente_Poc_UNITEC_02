@@ -1,143 +1,153 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/Components/Ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/Ui/card";
-import { analyzeRisks, RiskAnalysis } from "@/Lib/riskAnalyzer";
-import { riskLabels, RiskCategory } from "@/Data/questionnaire";
-import { Loader2, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
-import { Header } from "@/Components/Header";
+import { validateStorageIntegrity, getCurrentUserId } from "@/Lib/storageManager";
+import { analyzeRisks } from "@/Lib/riskAnalyzer";
+import { RiskCategory } from "@/Data/questionnaire";
+import { TypingIndicator } from "@/Components/Chat/TypingIndicator";
+import { ChatBubble } from "@/Components/Chat/ChatBubble";
 
-const riskIcons: Record<RiskCategory, React.ReactNode> = {
-  economica: <AlertCircle className="w-5 h-5" />,
-  social: <AlertCircle className="w-5 h-5" />,
-  baja_preparacion: <AlertCircle className="w-5 h-5" />,
-  organizacion: <AlertCircle className="w-5 h-5" />,
-  tecnologica: <AlertCircle className="w-5 h-5" />,
-  desorientacion: <AlertCircle className="w-5 h-5" />,
-  entorno: <AlertCircle className="w-5 h-5" />,
-  emocional: <AlertCircle className="w-5 h-5" />,
+interface ChatMessage {
+  sender: "user" | "agent";
+  message: string;
+}
+
+// Mapeo de diagnósticos a rutas
+const RISK_TO_ROUTE: Record<string, string> = {
+  desorientacion: "/route-a",
+  economica: "/route-b",
+  emocional: "/route-c",
+  baja_preparacion: "/route-d",
+  social: "/route-e",
+  organizacion: "/route-f",
+  tecnologica: "/route-g",
+  entorno: "/agent", // Default si no hay coincidencia
 };
 
 export default function Summary() {
   const navigate = useNavigate();
-  const [analysis, setAnalysis] = useState<RiskAnalysis | null>(null);
-  const [showSecondary, setShowSecondary] = useState(false);
-  const [analyzing, setAnalyzing] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(true);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
-    const answersData = localStorage.getItem("udla_answers");
-    if (!answersData) {
+    // Validar que no hay datos de usuarios anteriores al entrar a Summary
+    validateStorageIntegrity();
+    const currentUserId = getCurrentUserId();
+    console.log(`✅ Summary inicializado para usuario: ${currentUserId}`);
+
+    const userId = localStorage.getItem("unitec_user_id");
+    const userPrefix = userId ? `user_${userId}_` : '';
+    
+    const answersData = localStorage.getItem(`${userPrefix}unitec_answers`);
+    const matricula = localStorage.getItem("unitec_matricula");
+    const routeAChatHistory = localStorage.getItem(`${userPrefix}routeA_conversationHistory`);
+
+    // Cargar historial del chat anterior
+    if (routeAChatHistory) {
+      try {
+        setChatHistory(JSON.parse(routeAChatHistory));
+      } catch (error) {
+        console.error("Error parsing chat history:", error);
+      }
+    }
+
+    if (!answersData || !matricula || !userId) {
       navigate("/home");
       return;
     }
 
-    setTimeout(() => {
-      const answersArray = JSON.parse(answersData) as [string, { text: string; risk?: string; weight?: number }][];
-      // Normalize to the expected shape for analyzeRisks
-      const normalized: Array<[string, { risk?: RiskCategory; weight?: number }]> = answersArray.map(([k, v]) => [k, { risk: v.risk as RiskCategory | undefined, weight: v.weight }]);
-      const answersMap = new Map<string, { risk?: RiskCategory; weight?: number }>(normalized);
-      const result = analyzeRisks(answersMap);
-      setAnalysis(result);
-      setAnalyzing(false);
-    }, 1500);
+    // Procesar automáticamente sin mostrar diagnóstico
+    const processAnswers = async () => {
+      try {
+        const answersArray = JSON.parse(answersData) as [string, { text: string; risk?: string; weight?: number }][];
+        
+        // Normalizar respuestas
+        const normalized: Array<[string, { risk?: RiskCategory; weight?: number }]> = answersArray.map(([k, v]) => [k, { risk: v.risk as RiskCategory | undefined, weight: v.weight }]);
+        const answersMap = new Map<string, { risk?: RiskCategory; weight?: number }>(normalized);
+        const result = analyzeRisks(answersMap);
+        
+        // Construir objeto de respuestas en formato esperado por backend
+        const respuestasFormato: Record<string, string> = {};
+        answersArray.forEach(([preguntaId, respuesta]) => {
+          respuestasFormato[preguntaId] = typeof respuesta.text === 'string' ? respuesta.text : respuesta.text.join(', ');
+        });
+
+        // 1. Enviar respuestas al backend para procesamiento
+        await fetch(
+          `/wp-json/gero/v1/procesar-respuestas-cuestionario-02`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: parseInt(userId),
+              matricula: matricula,
+              respuestas: respuestasFormato,
+            }),
+          }
+        );
+
+        // Guardar datos en localStorage para el agente
+        const riesgosArray = [result.primary, ...result.secondary];
+        localStorage.setItem("unitec_riesgos_principales", JSON.stringify(riesgosArray));
+        
+        // 2. Guardar riesgos en la BD
+        await fetch(
+          `/wp-json/gero/v1/guardar-riesgos-agente-02`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: parseInt(userId),
+              riesgos: riesgosArray,
+            }),
+          }
+        );
+
+        // Determinar la ruta según el diagnóstico principal
+        const targetRoute = RISK_TO_ROUTE[result.primary] || "/agent";
+
+        // Redirigir a la ruta correspondiente
+        setIsProcessing(false);
+        setTimeout(() => {
+          navigate(targetRoute);
+        }, 1000);
+      } catch (error) {
+        console.error("Error procesando respuestas:", error);
+        setIsProcessing(false);
+        navigate("/agent");
+      }
+    };
+
+    processAnswers();
   }, [navigate]);
 
-  const handleContinue = (risk: RiskCategory) => {
-    localStorage.setItem("udla_current_risk", risk);
-    
-    // Route map for all 7 categories
-    const routeMap: Record<RiskCategory, string> = {
-      desorientacion: "/route-a",
-      economica: "/route-b",
-      social: "/route-c",
-      organizacion: "/route-d",
-      tecnologica: "/route-e",
-      baja_preparacion: "/route-f",
-      emocional: "/route-g",
-      entorno: "/route-placeholder"
-    };
-    
-    navigate(routeMap[risk] || "/route-placeholder");
-  };
-
-  if (analyzing || !analysis) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Analizando tus respuestas...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Mostrar chat continuo con el mensaje de procesamiento al final
   return (
-    <div className="min-h-screen bg-background">
-      <Header subtitle="Resumen de caracterización" />
-
-      <main className="max-w-2xl mx-auto px-4 py-6 pb-24">
-        <div className="mb-6 text-center animate-in fade-in duration-500">
-          <CheckCircle2 className="w-12 h-12 text-success mx-auto mb-3" />
-          <h2 className="text-2xl font-bold mb-2">¡Gracias por compartir!</h2>
-          <p className="text-muted-foreground">
-            Aquí está lo que identificamos. Vamos a trabajar juntos en el tema principal.
-          </p>
+    <div className="min-h-screen bg-background flex flex-col p-4">
+      <div className="max-w-2xl w-full mx-auto flex flex-col flex-1">
+        {/* Mostrar historial de chat previo */}
+        <div className="space-y-4 mb-6 flex-1 overflow-y-auto">
+          {chatHistory.map((msg, idx) => (
+            <ChatBubble
+              key={idx}
+              sender={msg.sender}
+              message={msg.message}
+            />
+          ))}
         </div>
 
-        {/* Primary Risk */}
-        <Card className="mb-4 border-2 border-primary shadow-lg animate-in slide-in-from-bottom-2 duration-500">
-          <CardHeader>
-            <div className="flex items-start gap-3">
-              <div className="text-primary mt-1">{riskIcons[analysis.primary]}</div>
-              <div className="flex-1">
-                <CardTitle className="text-lg">Tema principal detectado</CardTitle>
-                <CardDescription className="mt-2 text-base font-medium text-foreground">
-                  {riskLabels[analysis.primary]}
-                </CardDescription>
-              </div>
+        {/* Mensaje de procesamiento continuando el chat */}
+        {isProcessing && (
+          <div className="space-y-4 mt-auto">
+            <ChatBubble 
+              sender="agent"
+              message="Perfecto. Estoy procesando tu información para ofrecerte el acompañamiento más adecuado..."
+            />
+            <div className="flex justify-start pl-2">
+              <TypingIndicator />
             </div>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              onClick={() => handleContinue(analysis.primary)} 
-              className="w-full"
-              size="lg"
-            >
-              Seguir con este tema
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Secondary Risks */}
-        {analysis.secondary.length > 0 && (
-          <div className="animate-in fade-in slide-in-from-bottom-3 duration-700 delay-200">
-            {!showSecondary ? (
-              <Button 
-                variant="outline" 
-                onClick={() => setShowSecondary(true)}
-                className="w-full"
-              >
-                Ver otros temas detectados
-              </Button>
-            ) : (
-              <div className="space-y-3">
-                <h3 className="text-sm font-medium text-muted-foreground">Otros temas que podemos abordar:</h3>
-                {analysis.secondary.map((risk) => (
-                  <Card key={risk} className="border hover:border-primary/50 transition-colors cursor-pointer" onClick={() => handleContinue(risk)}>
-                    <CardHeader className="py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="text-muted-foreground">{riskIcons[risk]}</div>
-                        <CardTitle className="text-sm font-medium">{riskLabels[risk]}</CardTitle>
-                      </div>
-                    </CardHeader>
-                  </Card>
-                ))}
-              </div>
-            )}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

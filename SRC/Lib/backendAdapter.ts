@@ -1,10 +1,14 @@
 // Minimal backend adapter to talk to the WordPress agent plugin
 // Keeps payloads simple and tolerant to the plugin's response shapes.
 
-// Prefer REST base localized by WordPress when available (GERO_CONFIG.rest_base).
+// Prefer REST base localized by WordPress when available (GERO_CONFIG_UNITEC or GERO_CONFIG).
 // Fallback to same-origin /wp-json/gero/v1 when not present.
-const BASE = (typeof window !== 'undefined' && (window as any).GERO_CONFIG && (window as any).GERO_CONFIG.rest_base)
-  ? (window as any).GERO_CONFIG.rest_base.replace(/\/$/, '')
+const CONFIG = (typeof window !== 'undefined' && ((window as any).GERO_CONFIG_UNITEC || (window as any).GERO_CONFIG))
+  ? ((window as any).GERO_CONFIG_UNITEC || (window as any).GERO_CONFIG)
+  : {};
+
+const BASE = (CONFIG && CONFIG.rest_base)
+  ? CONFIG.rest_base.replace(/\/$/, '')
   : (typeof window !== 'undefined' ? window.location.origin : '');
 const API_PREFIX = `${BASE}/wp-json/gero/v1`.replace(/([^:])\/\//g, '$1/');
 
@@ -22,8 +26,8 @@ export async function validateMatricula(matricula: string, url_origen = '') {
   params.set('matricula', matricula);
   if (url_origen) params.set('url_origen', url_origen);
 
-  const url = (typeof window !== 'undefined' && (window as any).GERO_CONFIG && (window as any).GERO_CONFIG.rest_base)
-    ? `${(window as any).GERO_CONFIG.rest_base.replace(/\/$/, '')}/validar-matricula?${params.toString()}`
+  const url = (CONFIG && CONFIG.rest_base)
+    ? `${CONFIG.rest_base.replace(/\/$/, '')}/validar-matricula?${params.toString()}`
     : `${API_PREFIX}/validar-matricula?${params.toString()}`;
 
   const res = await fetch(url, {
@@ -32,13 +36,18 @@ export async function validateMatricula(matricula: string, url_origen = '') {
     credentials: 'same-origin'
   });
   const json = await safeJson(res);
+  
+  // DEBUG: Loguear respuesta completa
+  console.log('validateMatricula response:', { json, nombre: json.nombre, body_nombre: json.body?.nombre });
+  
   // Normalize likely keys
   return {
     ok: res.ok,
     status: res.status,
     body: json,
     userId: json.id || json.user_id || json.userId || 0,
-    carrera: json.carrera || json.career || null,
+    nombre: json.nombre || json.body?.nombre || '',
+    carrera: json.carrera || json.career || json.body?.carrera || null,
     riesgos: json.riesgos_detectados || json.riesgos || json.riesgos_detectados_lista || [],
     message: json.message || json.msg || ''
   };
@@ -47,8 +56,8 @@ export async function validateMatricula(matricula: string, url_origen = '') {
 export async function getLastConversation(value_validador: string) {
   const params = new URLSearchParams();
   params.set('value_validador', value_validador);
-  const url = (typeof window !== 'undefined' && (window as any).GERO_CONFIG && (window as any).GERO_CONFIG.rest_base)
-    ? `${(window as any).GERO_CONFIG.rest_base.replace(/\/$/, '')}/last-conversation?${params.toString()}`
+  const url = (CONFIG && CONFIG.rest_base)
+    ? `${CONFIG.rest_base.replace(/\/$/, '')}/last-conversation?${params.toString()}`
     : `${API_PREFIX}/last-conversation?${params.toString()}`;
   const res = await fetch(url, {
     method: 'GET',
@@ -104,8 +113,8 @@ export async function sendChatMessage(payload: {
   // user message
   messages.push({ role: 'user', content: payload.message });
 
-  const url = (typeof window !== 'undefined' && (window as any).GERO_CONFIG && (window as any).GERO_CONFIG.rest_base)
-    ? `${(window as any).GERO_CONFIG.rest_base.replace(/\/$/, '')}/chat-openai-agente`
+  const url = (CONFIG && CONFIG.rest_base)
+    ? `${CONFIG.rest_base.replace(/\/$/, '')}/chat-openai-agente`
     : `${API_PREFIX}/chat-openai-agente`;
   const res = await fetch(url, {
     method: 'POST',
@@ -142,8 +151,8 @@ export async function sendChatMessage(payload: {
 }
 
 export async function saveConversation(userId: number, conversationString: string) {
-  const url = (typeof window !== 'undefined' && (window as any).GERO_CONFIG && (window as any).GERO_CONFIG.rest_base)
-    ? `${(window as any).GERO_CONFIG.rest_base.replace(/\/$/, '')}/guardar-conversacion-agente`
+  const url = (CONFIG && CONFIG.rest_base)
+    ? `${CONFIG.rest_base.replace(/\/$/, '')}/guardar-conversacion-agente`
     : `${API_PREFIX}/guardar-conversacion-agente`;
   const res = await fetch(url, {
     method: 'POST',
@@ -161,8 +170,8 @@ export async function saveHypotheses(userId: number, hypotheses: string[], matri
   if (typeof userId === 'number') body.user_id = userId;
   if (matricula) body.matricula = matricula;
 
-  const url = (typeof window !== 'undefined' && (window as any).GERO_CONFIG && (window as any).GERO_CONFIG.rest_base)
-    ? `${(window as any).GERO_CONFIG.rest_base.replace(/\/$/, '')}/guardar-hipotesis-agente`
+  const url = (CONFIG && CONFIG.rest_base)
+    ? `${CONFIG.rest_base.replace(/\/$/, '')}/guardar-hipotesis-agente`
     : `${API_PREFIX}/guardar-hipotesis-agente`;
   const res = await fetch(url, {
     method: 'POST',
@@ -175,8 +184,8 @@ export async function saveHypotheses(userId: number, hypotheses: string[], matri
 }
 
 export async function classifyCaseAuto(payload: { userId?: number; matricula?: string; texto?: string }) {
-  const url = (typeof window !== 'undefined' && (window as any).GERO_CONFIG && (window as any).GERO_CONFIG.rest_base)
-    ? `${(window as any).GERO_CONFIG.rest_base.replace(/\/$/, '')}/clasificar-caso-agente`
+  const url = (CONFIG && CONFIG.rest_base)
+    ? `${CONFIG.rest_base.replace(/\/$/, '')}/clasificar-caso-agente`
     : `${API_PREFIX}/clasificar-caso-agente`;
   const res = await fetch(url, {
     method: 'POST',

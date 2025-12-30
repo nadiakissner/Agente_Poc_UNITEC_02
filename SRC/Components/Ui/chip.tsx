@@ -11,13 +11,13 @@ const Chip = React.forwardRef<HTMLButtonElement, ChipProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-medium transition-all duration-150",
-          "border-2 hover:scale-[1.02] active:scale-[0.98] hover:shadow-md",
+          "w-full text-left flex items-center justify-start rounded-lg px-4 py-2.5 text-sm transition-all duration-150",
+          "border border-border/60 hover:border-primary/40",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           "disabled:pointer-events-none disabled:opacity-50",
           selected
-            ? "bg-primary text-primary-foreground border-primary shadow-md"
-            : "bg-background text-foreground border-border hover:border-primary/50 hover:bg-accent",
+            ? "bg-primary/10 text-primary border-primary/60 font-medium"
+            : "bg-background hover:bg-accent/50 text-foreground",
           className
         )}
         {...props}

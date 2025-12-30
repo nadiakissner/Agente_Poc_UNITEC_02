@@ -10,6 +10,19 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  build: {
+    outDir: "dist",
+    assetsDir: "assets",
+    rollupOptions: {
+      output: {
+        // Prefijo único para UNITEC para evitar conflictos de nombres
+        entryFileNames: "assets/[name]-unitec-[hash].js",
+        chunkFileNames: "assets/[name]-unitec-[hash].js",
+        assetFileNames: "assets/[name]-unitec-[hash][extname]",
+      },
+    },
+  },
+  base: "/",
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
