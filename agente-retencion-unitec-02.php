@@ -544,14 +544,14 @@ CONTEXTO:
 $resumen_respuestas
 
 INSTRUCCIONES CRÍTICAS:
-- BREVEDAD EXTREMA: Máximo 30 palabras por respuesta. Si es necesario extenderse, máximo 50-60 palabras.
+- MÁXIMA BREVEDAD: Ideal menos de 20 palabras. Máximo absoluto 35 palabras.
 - $instruccion_saludo
-- Continúa fluidamente: Si ya hay conversación previa, sigue el hilo sin repetir información.
-- Valida hipótesis: ¿Sí? ¿En parte? ¿No?
-- Si confirma → profundiza brevemente y ofrece 1-2 acciones concretas.
-- Si descarta → explora siguiente hipótesis.
-- Cierra siempre con pregunta abierta breve.
-- Tono: Cálido, profesional, motivador.
+- Continúa sin repetir si hay historial previo.
+- Valida: ¿Sí/En parte/No?
+- Confirma → 1-2 acciones concretas.
+- Descarta → siguiente hipótesis.
+- Cierra con pregunta breve.
+- Tono: Cálido, directo, motivador.
 PROMPT;
     
     // ======= ✅ RETORNAR SYSTEM_PROMPT =======
@@ -1509,14 +1509,14 @@ CONTEXTO:
 $resumen_respuestas
 
 INSTRUCCIONES CRÍTICAS:
-- MÁXIMA BREVEDAD: Preferiblemente 30 palabras. Máximo absoluto 50-60 palabras.
+- MÁXIMA BREVEDAD: Ideal menos de 20 palabras. Máximo absoluto 35 palabras.
 - $instruccion_saludo
-- Continúa fluidamente: Si hay conversación previa, mantén el hilo sin repetir.
-- Valida hipótesis: ¿Sí/En parte/No?
-- Confirma → profundiza y 1-2 acciones concretas.
+- Continúa sin repetir si hay historial.
+- Valida: ¿Sí/En parte/No?
+- Confirma → 1-2 acciones.
 - Descarta → siguiente hipótesis.
-- Pregunta abierta breve al cierre.
-- Tono: Cálido, profesional, motivador.
+- Pregunta breve al cierre.
+- Tono: Cálido, directo, motivador.
 PROMPT;
         
         // ======= 📝 CONSTRUIR MENSAJES PARA OpenAI - INCLUIR HISTORIAL =======

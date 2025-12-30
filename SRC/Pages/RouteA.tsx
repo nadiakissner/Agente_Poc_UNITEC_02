@@ -15,6 +15,7 @@ import { ArrowRight, ExternalLink, Send, ArrowLeft } from "lucide-react";
 import { useToast } from "@/Hooks/use-toast";
 import { obtenerRiasecCarrera, verificarAlineacionRiasec } from "@/Data/carreras_riasec";
 import { validateStorageIntegrity, getCurrentUserId } from "@/Lib/storageManager";
+import { alternativeRoutes } from "@/Data/routes";
 
 const API_BASE = "/wp-json/gero/v1"; 
 const ALEX_URL = "https://wa.me/5215596610554?text=Hola%20Alex.%20Tengo%20algunas%20dudas%20sobre%20la%20carrera%20que%20eleg%C3%AD%20y%20quisiera%20conversarlo%20contigo";
@@ -51,10 +52,21 @@ export default function RouteA() {
   const [typing, setTyping] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
 
-  // CONVERSACIÓN
+  // CONVERSACIÓN - Cargar historial de Home primero, luego RouteA si existe
   const [conversationHistory, setConversationHistory] = useState<{sender: 'agent'|'user', message: string}[]>(() => {
+    // Primero, intentar cargar historial de Home
+    const homeHistory = localStorage.getItem("unitec_home_chat_history");
+    const homeMessages = homeHistory ? JSON.parse(homeHistory) : [];
+    
+    // Luego, intentar cargar historial de RouteA
     const saved = localStorage.getItem(getStorageKey("routeA_conversationHistory", userId));
-    return saved ? JSON.parse(saved) : [];
+    const routeAMessages = saved ? JSON.parse(saved) : [];
+    
+    // Si hay historial de Home, combinar ambos. Si no, usar solo RouteA
+    if (homeMessages.length > 0) {
+      return [...homeMessages, ...routeAMessages];
+    }
+    return routeAMessages;
   });
 
   // PUNTUACIÓN C/R (Determina Rama)
@@ -220,6 +232,20 @@ export default function RouteA() {
     
     const currentUserId = getCurrentUserId();
     console.log(`✅ RouteA inicializado para usuario: ${currentUserId}`);
+    
+    // CARGAR HISTORIAL DE HOME SI EXISTE Y NO ESTÁ EN CONVERSATIONHISTORY
+    const homeHistory = localStorage.getItem("unitec_home_chat_history");
+    if (homeHistory && conversationHistory.length === 0) {
+      try {
+        const homeMessages = JSON.parse(homeHistory);
+        if (homeMessages.length > 0) {
+          setConversationHistory(homeMessages);
+          console.log(`📝 Historial de Home cargado: ${homeMessages.length} mensajes`);
+        }
+      } catch (err) {
+        console.error('Error cargando historial de Home:', err);
+      }
+    }
     
     if (riesgosDetectados.length > 0 && userId) {
       fetch(`${API_BASE}/guardar-riesgos-agente`, {
@@ -662,7 +688,7 @@ export default function RouteA() {
           } else {
             // NO MATCH: Derivar a ALEX
             setTimeout(() => {
-              const msg = `Veo que tus intereses se alinean de forma diferente a la carrera de ${userCarrera}. Esto no significa que estés equivocado/a, pero podrías beneficiarte de una conversación más profunda sobre tu camino.\n\nTe recomiendo que hables directamente con ALEX, que puede ayudarte a explorar opciones y tomar una decisión más informada.\n\n👇 Haz clic en el botón de abajo para conectar con ALEX ahora`;
+              const msg = `Tus intereses se alinean de forma diferente a ${userCarrera}. Podrías beneficiarte de una conversación más profunda sobre tu camino. Te recomiendo hablar con ALEX para explorar opciones.`;
               
               const historyWithMsg = [...historyWithResult, {sender: 'agent' as const, message: msg}];
               setConversationHistory(historyWithMsg);
@@ -676,7 +702,7 @@ export default function RouteA() {
           // Carrera no encontrada
           setTimeout(() => {
             console.warn('Carrera no encontrada:', userCarrera);
-            const msg = `Tu carrera no se encuentra en nuestro sistema de comparación. Te recomiendo que hables con el Agente ALEX de UNITEC para recibir una orientación personalizada.`;
+            const msg = `Tu carrera no está en nuestro sistema. Te recomiendo hablar con ALEX para recibir orientación personalizada.`;
             
             const historyWithMsg = [...historyWithResult, {sender: 'agent' as const, message: msg}];
             setConversationHistory(historyWithMsg);
@@ -762,14 +788,12 @@ export default function RouteA() {
 
       <main className="flex-1 w-full px-4 py-6 md:px-6 md:py-8 pb-24 max-w-2xl mx-auto">
         
-        {/* CONEXIÓN CON ALEX */}
+        {/* CONEXIÓN CON ALEX - Dentro del flujo de conversación */}
         {feedbackMsg === "pending_alex_connection" && !showOtherRoutes && (
-          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-400 rounded-lg p-6 space-y-4 mb-6 shadow-md animate-in fade-in slide-in-from-bottom-3 duration-500">
-            <div className="space-y-4">
-              <p className="text-sm text-blue-900 font-semibold">
-                🚀 Conecta ahora con ALEX para una orientación personalizada:
-              </p>
-              <div className="space-y-2 sm:space-y-3">
+          <div className="space-y-4">
+            {/* El mensaje de Alex ya está en conversationHistory, así que solo mostramos el botón */}
+            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-400 rounded-lg p-6 space-y-4 shadow-md animate-in fade-in slide-in-from-bottom-3 duration-500">
+              <div className="space-y-3">
                 <a
                   href={ALEX_URL}
                   target="_blank"
@@ -781,9 +805,6 @@ export default function RouteA() {
                 </a>
                 <button
                   onClick={() => {
-                    const responseMsg = "Entendido, podemos explorar otras opciones mientras tanto. Aquí hay alternativas que podrían interesarte:";
-                    const historyWithResponse = [...conversationHistory, {sender: 'agent' as const, message: responseMsg}];
-                    setConversationHistory(historyWithResponse);
                     setShowOtherRoutes(true);
                   }}
                   className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition"
@@ -795,65 +816,29 @@ export default function RouteA() {
           </div>
         )}
 
-        {/* OTRAS RUTAS */}
+        {/* OTRAS RUTAS - Cards dinámicas desde data centralizada */}
         {feedbackMsg === "pending_alex_connection" && showOtherRoutes && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <button
-              onClick={() => navigate("/routeB")}
-              className="p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 hover:shadow-lg transition-all text-left group flex flex-col h-full"
-            >
-              <div className="flex-1 flex flex-col">
-                <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
-                  Route B: Manejo Académico
-                </h3>
-                <p className="text-xs text-muted-foreground mt-2 flex-1">
-                  Fortalece tus habilidades de estudio y organización académica con estrategias personalizadas.
-                </p>
-              </div>
-              <ArrowRight className="w-5 h-5 text-primary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-3" />
-            </button>
-            <button
-              onClick={() => navigate("/routeC")}
-              className="p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 hover:shadow-lg transition-all text-left group flex flex-col h-full"
-            >
-              <div className="flex-1 flex flex-col">
-                <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
-                  Route C: Bienestar y Balance
-                </h3>
-                <p className="text-xs text-muted-foreground mt-2 flex-1">
-                  Aprende técnicas de bienestar, manejo del estrés y balance vida-estudio.
-                </p>
-              </div>
-              <ArrowRight className="w-5 h-5 text-primary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-3" />
-            </button>
-            <button
-              onClick={() => navigate("/routeD")}
-              className="p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 hover:shadow-lg transition-all text-left group flex flex-col h-full"
-            >
-              <div className="flex-1 flex flex-col">
-                <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
-                  Route D: Integración Social
-                </h3>
-                <p className="text-xs text-muted-foreground mt-2 flex-1">
-                  Conecta con otros estudiantes y construye una red de apoyo en tu institución.
-                </p>
-              </div>
-              <ArrowRight className="w-5 h-5 text-primary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-3" />
-            </button>
-            <button
-              onClick={() => navigate("/routeE")}
-              className="p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 hover:shadow-lg transition-all text-left group flex flex-col h-full"
-            >
-              <div className="flex-1 flex flex-col">
-                <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
-                  Route E: Desarrollo Profesional
-                </h3>
-                <p className="text-xs text-muted-foreground mt-2 flex-1">
-                  Prepárate para tu futura carrera profesional con herramientas prácticas.
-                </p>
-              </div>
-              <ArrowRight className="w-5 h-5 text-primary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-3" />
-            </button>
+          <div className="space-y-4">
+            <ChatBubble sender="agent" message="Entendido, podemos explorar otras opciones mientras tanto. Aquí hay alternativas que podrían interesarte:" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              {alternativeRoutes.map((route) => (
+                <button
+                  key={route.id}
+                  onClick={() => navigate(route.path)}
+                  className="p-4 rounded-lg border-2 border-border bg-background hover:border-primary/50 hover:shadow-lg transition-all text-left group flex flex-col h-full"
+                >
+                  <div className="flex-1 flex flex-col">
+                    <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
+                      {route.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-2 flex-1">
+                      {route.description}
+                    </p>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-primary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-3" />
+                </button>
+              ))}
+            </div>
           </div>
         )}
         
