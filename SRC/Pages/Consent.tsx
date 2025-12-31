@@ -59,9 +59,9 @@ export default function Consent() {
       console.log('Consent.tsx - Guardando nombre:', nombreGuardar);
       console.log('Consent.tsx - Guardando carrera:', result.body?.carrera);
 
-      // Si es recurrente, cargar historial previo y saltar directo al chat
+      // Siempre navegar a la experiencia SPA unificada (chat + cuestionario)
+      // Intentar cargar historial previo si existe
       if (result.body?.flujo === "recurrente") {
-        // Intentar cargar la última conversación
         try {
           const convResponse = await fetch(`/wp-json/gero/v1/last-conversation?value_validador=${matricula}`);
           const convData = await convResponse.json();
@@ -73,12 +73,10 @@ export default function Consent() {
         } catch (err) {
           console.warn('No se pudo cargar historial previo:', err);
         }
-        
-        navigate("/agent");
-      } else {
-        // Si es nuevo, ir a Home
-        navigate("/home");
       }
+      
+      // Navegar a la experiencia SPA (tanto nuevos como recurrentes)
+      navigate("/chat");
     } catch (err: unknown) {
       setError("Error al validar. Intenta nuevamente.");
       console.error("Validation error:", err);

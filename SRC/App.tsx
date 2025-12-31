@@ -19,6 +19,7 @@ import RouteG from "./Pages/RouteG";
 import RoutePlaceholder from "./Pages/RoutePlaceholder";
 import NotFound from "./Pages/NotFound";
 import Agent from "./Pages/Agent";
+import SPAChat from "./Pages/SPAChat";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +84,7 @@ const AppContent = () => {
       <Route path="/route-g" element={<RouteG />} />
       <Route path="/route-placeholder" element={<RoutePlaceholder />} />
       <Route path="/agent" element={<Agent />} />
+      <Route path="/chat" element={<SPAChat />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
