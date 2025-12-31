@@ -274,6 +274,25 @@ export default function SPAChat() {
       });
 
       const data = await res.json();
+      
+      // Check for HTTP errors
+      if (!res.ok) {
+        console.error('Error HTTP:', res.status, data);
+        return {
+          message: data.message || 'Error de comunicación con el servidor. Intenta de nuevo.',
+          action: null,
+        };
+      }
+      
+      // Check for API errors
+      if (data.success === false) {
+        console.error('Error API:', data.error, data.message);
+        return {
+          message: data.message || 'Hubo un problema procesando tu mensaje. Intenta de nuevo.',
+          action: null,
+        };
+      }
+      
       return {
         message: data.respuesta || data.message || 'Sin respuesta del agente',
         action: data.action || null,
@@ -281,7 +300,7 @@ export default function SPAChat() {
     } catch (e) {
       console.error('Error al comunicarse con el agente:', e);
       return {
-        message: 'Disculpa, hubo un error. ¿Puedes intentar nuevamente?',
+        message: 'Disculpa, hubo un error de conexión. ¿Puedes intentar nuevamente?',
         action: null,
       };
     }

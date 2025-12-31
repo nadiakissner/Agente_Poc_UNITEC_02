@@ -227,7 +227,7 @@ function gero_obtener_email_usuario_UNITEC_02( $user_id ) {
 /**
  * Get user data from habilitados table
  * 
- * @param int $user_id User ID
+ * @param int $user_id User ID (this is the 'id' from byw_usuarios_habilitados)
  * @return object User data (nombre, carrera) or null
  */
 function gero_obtener_datos_usuario_UNITEC_02( $user_id ) {
@@ -235,7 +235,7 @@ function gero_obtener_datos_usuario_UNITEC_02( $user_id ) {
     
     return $wpdb->get_row( $wpdb->prepare(
         "SELECT id, nombre, apellido, email, cedula_matricula, carrera, campus, modalidad_usuario, tipo_programa, escuela, user_id 
-         FROM byw_usuarios_habilitados WHERE user_id = %d LIMIT 1",
+         FROM byw_usuarios_habilitados WHERE id = %d LIMIT 1",
         (int) $user_id
     ) );
 }
@@ -894,11 +894,15 @@ function gero_endpoint_chat_openai_UNITEC_02( WP_REST_Request $request ) {
     // Get user and agent data
     $usuario = gero_obtener_datos_usuario_UNITEC_02( $user_id );
     if ( ! $usuario ) {
+        error_log( 'Usuario no encontrado - user_id: ' . $user_id );
         return new WP_REST_Response( [
             'success' => false,
             'error'   => 'usuario_no_encontrado',
+            'message' => 'Usuario no encontrado con ID: ' . $user_id,
         ], 404 );
     }
+    
+    error_log( 'Usuario encontrado: ' . $usuario->nombre . ' - Carrera: ' . $usuario->carrera );
     
     // Build system prompt
     $agente = $wpdb->get_row( $wpdb->prepare(
