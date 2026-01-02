@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Agente de Retencion UNITEC 02
+ * Plugin Name: Agente de Retencion y Acompañamiento (Refactorizado)
  * Description: Agente de Gero con interfaz de chat - Version UNITEC 02. Motor de hipotesis, chat IA y cuestionario de retencion.
  * Version: 2.0
  * Author: Christian Pflaum
@@ -10,6 +10,11 @@
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
+
+if ( defined( 'GERO_RETENCION_LOADED' ) ) {
+    return; // Ya está cargado
+}
+define( 'GERO_RETENCION_LOADED', true );
 
 /**
  * ============================================================================
@@ -72,7 +77,7 @@ $model = defined('GERO_OPENAI_MODEL') ? GERO_OPENAI_MODEL : 'gpt-4o';
  * @param array $respuestas Questionnaire responses with riskWeights
  * @return array Risk scores by category: ['economica' => 5, 'desorientacion' => 8, ...]
  */
-function gero_calcular_puntuacion_riesgos_UNITEC_02( $respuestas ) {
+function gero_calcular_puntuacion_riesgos_UNITEC( $respuestas ) {
     // Initialize all categories with 0
     $puntuaciones = array_fill_keys( array_keys( GERO_RISK_CATEGORIES ), 0 );
     
@@ -101,39 +106,6 @@ function gero_calcular_puntuacion_riesgos_UNITEC_02( $respuestas ) {
                 }
             }
         }
-        
-        // === LoGICA COMENTADA - Preguntas P5/P6 desactivadas por ahora ===
-        // Special handling for P5 (text with keywords) - COMENTADO
-        /*
-        if ( $pregunta_id === 'P5' && ! empty( $texto_respuesta ) ) {
-            $texto_lower = strtolower( $texto_respuesta );
-            
-            // Detect funding source for conditional P6 weights
-            $fuente = gero_detectar_fuente_financiamiento_UNITEC_02( $texto_lower );
-            
-            // Store for P6 conditional processing (if needed)
-            $puntuaciones['_p5_fuente'] = $fuente;
-        }
-        
-        // Special handling for P6 (conditional weights based on P5)
-        if ( $pregunta_id === 'P6' && isset( $puntuaciones['_p5_fuente'] ) ) {
-            $valor_likert = (int) $texto_respuesta;
-            $fuente = $puntuaciones['_p5_fuente'];
-            
-            $conditional_weights = [
-                'familia'  => [ 3 => 0, 4 => 1, 5 => 1 ],
-                'beca'     => [ 3 => 1, 4 => 3, 5 => 3 ],
-                'credito'  => [ 3 => 1, 4 => 3, 5 => 3 ],
-                'trabajo'  => [ 3 => 1, 4 => 2, 5 => 2 ],
-            ];
-            
-            if ( isset( $conditional_weights[ $fuente ][ $valor_likert ] ) ) {
-                $peso = $conditional_weights[ $fuente ][ $valor_likert ];
-                $puntuaciones['economica'] += $peso;
-            }
-        }
-        */
-        // === FIN LoGICA COMENTADA ===
     }
     
     // Remove internal keys
@@ -150,7 +122,7 @@ function gero_calcular_puntuacion_riesgos_UNITEC_02( $respuestas ) {
  * @param string $texto User input text (lowercased)
  * @return string Detected source: 'familia', 'beca', 'credito', 'trabajo', or 'otra'
  */
-function gero_detectar_fuente_financiamiento_UNITEC_02( $texto ) {
+function gero_detectar_fuente_financiamiento_UNITEC( $texto ) {
     if ( empty( $texto ) ) {
         return 'otra';
     }
@@ -178,7 +150,7 @@ function gero_detectar_fuente_financiamiento_UNITEC_02( $texto ) {
  * @param array $puntuaciones Risk scores by category
  * @return array Ordered hypotheses with scores
  */
-function gero_determinar_hipotesis_principales_UNITEC_02( $puntuaciones ) {
+function gero_determinar_hipotesis_principales_UNITEC( $puntuaciones ) {
     // Filter only categories with scores > 0
     $riesgos_activos = array_filter(
         $puntuaciones,
@@ -204,7 +176,7 @@ function gero_determinar_hipotesis_principales_UNITEC_02( $puntuaciones ) {
  * @param string $categoria Risk category key
  * @return string Readable label
  */
-function gero_obtener_etiqueta_hipotesis_UNITEC_02( $categoria ) {
+function gero_obtener_etiqueta_hipotesis_UNITEC( $categoria ) {
     return GERO_RISK_CATEGORIES[ $categoria ] ?? $categoria;
 }
 
@@ -214,7 +186,7 @@ function gero_obtener_etiqueta_hipotesis_UNITEC_02( $categoria ) {
  * ============================================================================
  */
 
-function gero_api_permission_public_unitec_02() {
+function gero_api_permission_public_UNITEC() {
     return defined('GERO_API_PUBLIC') && GERO_API_PUBLIC === true;
 }
 
@@ -225,7 +197,7 @@ function gero_api_permission_public_unitec_02() {
  * @param int $user_id User ID from byw_usuarios_habilitados
  * @return string User email/matricula or empty string
  */
-function gero_obtener_email_usuario_UNITEC_02( $user_id ) {
+function gero_obtener_email_usuario_UNITEC( $user_id ) {
     global $wpdb;
     
     $email = $wpdb->get_var( $wpdb->prepare(
@@ -242,7 +214,7 @@ function gero_obtener_email_usuario_UNITEC_02( $user_id ) {
  * @param int $user_id User ID (this is the 'id' from byw_usuarios_habilitados)
  * @return object User data (nombre, carrera) or null
  */
-function gero_obtener_datos_usuario_UNITEC_02( $user_id ) {
+function gero_obtener_datos_usuario_UNITEC( $user_id ) {
     global $wpdb;
     
     return $wpdb->get_row( $wpdb->prepare(
@@ -258,7 +230,7 @@ function gero_obtener_datos_usuario_UNITEC_02( $user_id ) {
  * @param string $matricula Student matricula
  * @return object User object or null
  */
-function gero_validar_matricula_UNITEC_02( $matricula ) {
+function gero_validar_matricula_UNITEC( $matricula ) {
     global $wpdb;
     
     return $wpdb->get_row( $wpdb->prepare(
@@ -273,7 +245,7 @@ function gero_validar_matricula_UNITEC_02( $matricula ) {
  * @param string $matricula Student matricula
  * @return bool True if has history, false if new
  */
-function gero_tiene_historial_UNITEC_02( $matricula ) {
+function gero_tiene_historial_UNITEC( $matricula ) {
     global $wpdb;
     
     $matricula_safe = sanitize_text_field( $matricula );
@@ -299,7 +271,7 @@ function gero_tiene_historial_UNITEC_02( $matricula ) {
  * @param array $respuestas Questionnaire responses
  * @return string Formatted summary
  */
-function gero_generar_resumen_respuestas_UNITEC_02( $respuestas ) {
+function gero_generar_resumen_respuestas_UNITEC( $respuestas ) {
     // Etiquetas actuales (P1-P2 activas)
     $preguntas_etiquetas = [
         'P1' => 'Sensacion frente a la universidad',
@@ -347,7 +319,7 @@ function gero_generar_resumen_respuestas_UNITEC_02( $respuestas ) {
  * @param string $texto Text to analyze
  * @return array Detection result: ['detected' => bool, 'level' => string, 'keywords' => array]
  */
-function gero_detectar_crisis_UNITEC_02( $texto ) {
+function gero_detectar_crisis_UNITEC( $texto ) {
     if ( empty( $texto ) ) {
         return [
             'detected'  => false,
@@ -427,12 +399,12 @@ function gero_detectar_crisis_UNITEC_02( $texto ) {
 add_action( 'rest_api_init', function () {
     register_rest_route( GERO_API_NAMESPACE, '/validar-matricula', [
         'methods'             => 'GET',
-        'callback'            => 'gero_endpoint_validar_matricula_UNITEC_02',
-        'permission_callback' => 'gero_api_permission_public_unitec_02',
+        'callback'            => 'gero_endpoint_validar_matricula_UNITEC',
+        'permission_callback' => 'gero_api_permission_public_UNITEC',
     ] );
 } );
 
-function gero_endpoint_validar_matricula_UNITEC_02( WP_REST_Request $request ) {
+function gero_endpoint_validar_matricula_UNITEC( WP_REST_Request $request ) {
     global $wpdb;
     
     $matricula = sanitize_text_field( $request->get_param( 'matricula' ) ?? '' );
@@ -447,7 +419,7 @@ function gero_endpoint_validar_matricula_UNITEC_02( WP_REST_Request $request ) {
     }
     
     // Validate matricula
-    $usuario = gero_validar_matricula_UNITEC_02( $matricula );
+    $usuario = gero_validar_matricula_UNITEC( $matricula );
     
     if ( ! $usuario ) {
         // Log failed validation attempt
@@ -467,7 +439,7 @@ function gero_endpoint_validar_matricula_UNITEC_02( WP_REST_Request $request ) {
         ], 200 );
     }
     
-    $tiene_historial = gero_tiene_historial_UNITEC_02( $matricula );
+    $tiene_historial = gero_tiene_historial_UNITEC( $matricula );
     
     // Log successful validation
     $wpdb->insert( 'byw_validacion_cuestionario', [
@@ -499,12 +471,12 @@ function gero_endpoint_validar_matricula_UNITEC_02( WP_REST_Request $request ) {
 add_action( 'rest_api_init', function () {
     register_rest_route( GERO_API_NAMESPACE, '/procesar-respuestas-cuestionario', [
         'methods'             => 'POST',
-        'callback'            => 'gero_endpoint_procesar_cuestionario_UNITEC_02',
-        'permission_callback' => 'gero_api_permission_public_unitec_02',
+        'callback'            => 'gero_endpoint_procesar_cuestionario_UNITEC',
+        'permission_callback' => 'gero_api_permission_public_UNITEC',
     ] );
 } );
 
-function gero_append_conversation_UNITEC_02( $user_id, $matricula, $texto ) {
+function gero_append_conversation_UNITEC( $user_id, $matricula, $texto ) {
     global $wpdb;
 
     $registro = $wpdb->get_row(
@@ -534,7 +506,7 @@ function gero_append_conversation_UNITEC_02( $user_id, $matricula, $texto ) {
 }
 
 
-function gero_endpoint_procesar_cuestionario_UNITEC_02( WP_REST_Request $request ) {
+function gero_endpoint_procesar_cuestionario_UNITEC( WP_REST_Request $request ) {
     global $wpdb;
     
     $body = $request->get_json_params();
@@ -552,11 +524,11 @@ function gero_endpoint_procesar_cuestionario_UNITEC_02( WP_REST_Request $request
     }
     
     // Calculate risk scores
-    $puntuaciones = gero_calcular_puntuacion_riesgos_UNITEC_02( $respuestas );
-    $hipotesis = gero_determinar_hipotesis_principales_UNITEC_02( $puntuaciones );
+    $puntuaciones = gero_calcular_puntuacion_riesgos_UNITEC( $respuestas );
+    $hipotesis = gero_determinar_hipotesis_principales_UNITEC( $puntuaciones );
     
     // Get readable labels
-    $hipotesis_lista = array_map( 'gero_obtener_etiqueta_hipotesis_UNITEC_02', array_keys( $hipotesis ) );
+    $hipotesis_lista = array_map( 'gero_obtener_etiqueta_hipotesis_UNITEC', array_keys( $hipotesis ) );
     
     // Determinar prioridad basada en hipotesis
     $riesgo_principal = array_key_first( $hipotesis ) ?? 'desorientacion';
@@ -586,7 +558,7 @@ function gero_endpoint_procesar_cuestionario_UNITEC_02( WP_REST_Request $request
     $texto_cuestionario .= "---\n";
     
     // Actualizar o insertar en byw_coach_interacciones
-    gero_append_conversation_UNITEC_02( $user_id, $matricula, $texto_cuestionario);
+    gero_append_conversation_UNITEC( $user_id, $matricula, $texto_cuestionario);
     
     // Actualizar byw_agente_retencion (solo columnas que existen)
     $registro_agente = $wpdb->get_row( $wpdb->prepare(
@@ -633,12 +605,12 @@ function gero_endpoint_procesar_cuestionario_UNITEC_02( WP_REST_Request $request
 add_action( 'rest_api_init', function () {
     register_rest_route( GERO_API_NAMESPACE, '/guardar-interacciones', [
         'methods'             => 'POST',
-        'callback'            => 'gero_endpoint_guardar_interacciones_UNITEC_02',
-        'permission_callback' => 'gero_api_permission_public_unitec_02',
+        'callback'            => 'gero_endpoint_guardar_interacciones_UNITEC',
+        'permission_callback' => 'gero_api_permission_public_UNITEC',
     ] );
 } );
 
-function gero_endpoint_guardar_interacciones_UNITEC_02( WP_REST_Request $request ) {
+function gero_endpoint_guardar_interacciones_UNITEC( WP_REST_Request $request ) {
     global $wpdb;
     
     $params = $request->get_json_params();
@@ -657,7 +629,7 @@ function gero_endpoint_guardar_interacciones_UNITEC_02( WP_REST_Request $request
     
     // Obtener value_validador (matricula) si no viene en params
     if ( empty( $matricula ) ) {
-        $usuario = gero_obtener_datos_usuario_UNITEC_02( $user_id );
+        $usuario = gero_obtener_datos_usuario_UNITEC( $user_id );
         $matricula = $usuario->cedula_matricula ?? '';
     }
     
@@ -672,7 +644,7 @@ function gero_endpoint_guardar_interacciones_UNITEC_02( WP_REST_Request $request
     $es_crisis = false;
     $nivel_crisis = '';
     if ( ! empty( $texto_analizar ) && $tipo !== 'crisis_detectada' ) {
-        $crisis = gero_detectar_crisis_UNITEC_02( $texto_analizar );
+        $crisis = gero_detectar_crisis_UNITEC( $texto_analizar );
         
         if ( $crisis['detected'] ) {
             $es_crisis = true;
@@ -703,7 +675,7 @@ function gero_endpoint_guardar_interacciones_UNITEC_02( WP_REST_Request $request
     $texto_guardar .= "\n---\n";
     
     // Buscar si ya existe registro para este usuario
-        $resultado = gero_append_conversation_UNITEC_02($user_id,$matricula,$texto_guardar);
+        $resultado = gero_append_conversation_UNITEC($user_id,$matricula,$texto_guardar);
 
     // obtener id del registro (opcional, si lo usás)
     $registro = $wpdb->get_row(
@@ -739,12 +711,12 @@ function gero_endpoint_guardar_interacciones_UNITEC_02( WP_REST_Request $request
 add_action( 'rest_api_init', function () {
     register_rest_route( GERO_API_NAMESPACE, '/chat-openai-agente', [
         'methods'             => 'POST',
-        'callback'            => 'gero_endpoint_chat_openai_UNITEC_02',
-        'permission_callback' => 'gero_api_permission_public_unitec_02',
+        'callback'            => 'gero_endpoint_chat_openai_UNITEC',
+        'permission_callback' => 'gero_api_permission_public_UNITEC',
     ] );
 } );
 
-function gero_endpoint_chat_openai_UNITEC_02( WP_REST_Request $request ) {
+function gero_endpoint_chat_openai_UNITEC( WP_REST_Request $request ) {
     global $wpdb;
     
     $body = $request->get_json_params();
@@ -761,7 +733,7 @@ function gero_endpoint_chat_openai_UNITEC_02( WP_REST_Request $request ) {
     }
     
     // Get user and agent data
-    $usuario = gero_obtener_datos_usuario_UNITEC_02( $user_id );
+    $usuario = gero_obtener_datos_usuario_UNITEC( $user_id );
     if ( ! $usuario ) {
         error_log( 'Usuario no encontrado - user_id: ' . $user_id );
         return new WP_REST_Response( [
@@ -797,7 +769,7 @@ function gero_endpoint_chat_openai_UNITEC_02( WP_REST_Request $request ) {
         }
     }
     
-    $riesgos_labels = array_map( 'gero_obtener_etiqueta_hipotesis_UNITEC_02', $riesgos );
+    $riesgos_labels = array_map( 'gero_obtener_etiqueta_hipotesis_UNITEC', $riesgos );
     $riesgos_lista = ! empty( $riesgos_labels ) ? implode( ', ', $riesgos_labels ) : 'Aun no identificados';
     
     // Obtener historial de conversacion y contar interacciones
@@ -1216,7 +1188,7 @@ function gero_endpoint_chat_openai_UNITEC_02( WP_REST_Request $request ) {
     }
     
     // Detectar crisis en el mensaje del usuario
-    $crisis = gero_detectar_crisis_UNITEC_02( $message );
+    $crisis = gero_detectar_crisis_UNITEC( $message );
     $crisis_detectada = $crisis['detected'];
     $nivel_crisis = $crisis['level'] ?? '';
     
@@ -1250,7 +1222,7 @@ function gero_endpoint_chat_openai_UNITEC_02( WP_REST_Request $request ) {
     $texto_interaccion .= "---\n";
     
     // Buscar si ya existe registro para este usuario
-    $resultado = gero_append_conversation_UNITEC_02($user_id,$matricula,$texto_interaccion);
+    $resultado = gero_append_conversation_UNITEC($user_id,$matricula,$texto_interaccion);
 
     if ( $resultado === false ) {
         error_log( 'Error al guardar interaccion: ' . $wpdb->last_error );
@@ -1325,12 +1297,12 @@ function gero_endpoint_chat_openai_UNITEC_02( WP_REST_Request $request ) {
 add_action( 'rest_api_init', function () {
     register_rest_route( GERO_API_NAMESPACE, '/guardar-resultado-cr', [
         'methods'             => 'POST',
-        'callback'            => 'gero_endpoint_guardar_resultado_cr_UNITEC_02',
-        'permission_callback' => 'gero_api_permission_public_unitec_02',
+        'callback'            => 'gero_endpoint_guardar_resultado_cr_UNITEC',
+        'permission_callback' => 'gero_api_permission_public_UNITEC',
     ] );
 } );
 
-function gero_endpoint_guardar_resultado_cr_UNITEC_02( WP_REST_Request $request ) {
+function gero_endpoint_guardar_resultado_cr_UNITEC( WP_REST_Request $request ) {
     global $wpdb;
     
     $body = $request->get_json_params();
@@ -1361,7 +1333,7 @@ function gero_endpoint_guardar_resultado_cr_UNITEC_02( WP_REST_Request $request 
     $texto_cr .= "---\n";
     
     // Buscar si ya existe registro para este usuario
-    $resultado = gero_append_conversation_UNITEC_02($user_id,$matricula,$texto_cr);
+    $resultado = gero_append_conversation_UNITEC($user_id,$matricula,$texto_cr);
     if ( $resultado === false ) {
         error_log( 'Error al guardar interaccion: ' . $wpdb->last_error );
         return new WP_REST_Response(
@@ -1391,12 +1363,12 @@ function gero_endpoint_guardar_resultado_cr_UNITEC_02( WP_REST_Request $request 
 add_action( 'rest_api_init', function () {
     register_rest_route( GERO_API_NAMESPACE, '/guardar-resultado-riasec', [
         'methods'             => 'POST',
-        'callback'            => 'gero_endpoint_guardar_resultado_riasec_UNITEC_02',
-        'permission_callback' => 'gero_api_permission_public_unitec_02',
+        'callback'            => 'gero_endpoint_guardar_resultado_riasec_UNITEC',
+        'permission_callback' => 'gero_api_permission_public_UNITEC',
     ] );
 } );
 
-function gero_endpoint_guardar_resultado_riasec_UNITEC_02( WP_REST_Request $request ) {
+function gero_endpoint_guardar_resultado_riasec_UNITEC( WP_REST_Request $request ) {
     global $wpdb;
     
     $body = $request->get_json_params();
@@ -1514,12 +1486,12 @@ function gero_endpoint_guardar_resultado_riasec_UNITEC_02( WP_REST_Request $requ
 add_action( 'rest_api_init', function () {
     register_rest_route( GERO_API_NAMESPACE, '/last-conversation', [
         'methods'             => 'GET',
-        'callback'            => 'gero_endpoint_last_conversation_UNITEC_02',
-        'permission_callback' => 'gero_api_permission_public_unitec_02',
+        'callback'            => 'gero_endpoint_last_conversation_UNITEC',
+        'permission_callback' => 'gero_api_permission_public_UNITEC',
     ] );
 } );
 
-function gero_endpoint_last_conversation_UNITEC_02( WP_REST_Request $request ) {
+function gero_endpoint_last_conversation_UNITEC( WP_REST_Request $request ) {
     global $wpdb;
     
     $value_validador = sanitize_text_field( $request->get_param( 'value_validador' ) ?? '' );
