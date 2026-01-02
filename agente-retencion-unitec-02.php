@@ -52,6 +52,8 @@ if ( ! defined( 'GERO_API_NAMESPACE' ) ) {
 if ( ! defined( 'GERO_API_VERSION' ) ) {
     define( 'GERO_API_VERSION', '2.0' );
 }
+$model = defined('GERO_OPENAI_MODEL') ? GERO_OPENAI_MODEL : 'gpt-4o';
+
 
 /**
  * ============================================================================
@@ -211,6 +213,11 @@ function gero_obtener_etiqueta_hipotesis_UNITEC_02( $categoria ) {
  * SECTION 3: UTILITY FUNCTIONS
  * ============================================================================
  */
+
+function gero_api_permission_public_unitec_02() {
+    return defined('GERO_API_PUBLIC') && GERO_API_PUBLIC === true;
+}
+
 
 /**
  * Get user email by ID from habilitados table
@@ -421,7 +428,7 @@ add_action( 'rest_api_init', function () {
     register_rest_route( GERO_API_NAMESPACE, '/validar-matricula', [
         'methods'             => 'GET',
         'callback'            => 'gero_endpoint_validar_matricula_UNITEC_02',
-        'permission_callback' => '__return_true',
+        'permission_callback' => 'gero_api_permission_public_unitec_02',
     ] );
 } );
 
@@ -493,9 +500,39 @@ add_action( 'rest_api_init', function () {
     register_rest_route( GERO_API_NAMESPACE, '/procesar-respuestas-cuestionario', [
         'methods'             => 'POST',
         'callback'            => 'gero_endpoint_procesar_cuestionario_UNITEC_02',
-        'permission_callback' => '__return_true',
+        'permission_callback' => 'gero_api_permission_public_unitec_02',
     ] );
 } );
+
+function gero_append_conversation_UNITEC_02( $user_id, $matricula, $texto ) {
+    global $wpdb;
+
+    $registro = $wpdb->get_row(
+        $wpdb->prepare(
+            "SELECT id, conversation_string FROM byw_coach_interacciones WHERE user_id = %d LIMIT 1",
+            $user_id
+        )
+    );
+
+    if ( $registro ) {
+        return $wpdb->update(
+            'byw_coach_interacciones',
+            [ 'conversation_string' => $registro->conversation_string . $texto ],
+            [ 'id' => $registro->id ]
+        );
+    }
+
+    return $wpdb->insert(
+        'byw_coach_interacciones',
+        [
+            'user_id'             => $user_id,
+            'value_validador'     => $matricula,
+            'conversation_string' => $texto,
+            'created_at'          => current_time( 'mysql' ),
+        ]
+    );
+}
+
 
 function gero_endpoint_procesar_cuestionario_UNITEC_02( WP_REST_Request $request ) {
     global $wpdb;
@@ -519,16 +556,16 @@ function gero_endpoint_procesar_cuestionario_UNITEC_02( WP_REST_Request $request
     $hipotesis = gero_determinar_hipotesis_principales_UNITEC_02( $puntuaciones );
     
     // Get readable labels
-    $hipotesis_lista = array_map( 'gero_obtener_etiqueta_hipotesis', array_keys( $hipotesis ) );
+    $hipotesis_lista = array_map( 'gero_obtener_etiqueta_hipotesis_UNITEC_02', array_keys( $hipotesis ) );
     
     // Determinar prioridad basada en hipotesis
     $riesgo_principal = array_key_first( $hipotesis ) ?? 'desorientacion';
     $prioridad = 'medio'; // Default
     if ( in_array( $riesgo_principal, [ 'crisis_emocional', 'ideas_abandono' ] ) ) {
         $prioridad = 'critico';
-    } elseif ( in_array( $riesgo_principal, [ 'dificultades_academicas', 'problemas_financieros' ] ) ) {
+    } elseif ( in_array( $riesgo_principal, [ 'baja_preparacion', 'economico', 'tecnologico', 'emocional' ] ) ) {
         $prioridad = 'alto';
-    } elseif ( in_array( $riesgo_principal, [ 'desorientacion', 'falta_integracion' ] ) ) {
+    } elseif ( in_array( $riesgo_principal, [ 'desorientacion', 'social', 'organizacion', 'entorno' ] ) ) {
         $prioridad = 'medio';
     } else {
         $prioridad = 'bajo';
@@ -549,29 +586,7 @@ function gero_endpoint_procesar_cuestionario_UNITEC_02( WP_REST_Request $request
     $texto_cuestionario .= "---\n";
     
     // Actualizar o insertar en byw_coach_interacciones
-    $registro_interacciones = $wpdb->get_row( $wpdb->prepare(
-        "SELECT id, conversation_string FROM byw_coach_interacciones WHERE user_id = %d LIMIT 1",
-        $user_id
-    ) );
-    
-    if ( $registro_interacciones ) {
-        $nuevo_conversation = $registro_interacciones->conversation_string . $texto_cuestionario;
-        $wpdb->update(
-            'byw_coach_interacciones',
-            [ 'conversation_string' => $nuevo_conversation ],
-            [ 'id' => $registro_interacciones->id ]
-        );
-    } else {
-        $wpdb->insert(
-            'byw_coach_interacciones',
-            [
-                'user_id'             => $user_id,
-                'value_validador'     => $matricula,
-                'conversation_string' => $texto_cuestionario,
-                'created_at'          => current_time( 'mysql' ),
-            ]
-        );
-    }
+    gero_append_conversation_UNITEC_02( $user_id, $matricula, $texto_cuestionario);
     
     // Actualizar byw_agente_retencion (solo columnas que existen)
     $registro_agente = $wpdb->get_row( $wpdb->prepare(
@@ -619,7 +634,7 @@ add_action( 'rest_api_init', function () {
     register_rest_route( GERO_API_NAMESPACE, '/guardar-interacciones', [
         'methods'             => 'POST',
         'callback'            => 'gero_endpoint_guardar_interacciones_UNITEC_02',
-        'permission_callback' => '__return_true',
+        'permission_callback' => 'gero_api_permission_public_unitec_02',
     ] );
 } );
 
@@ -688,33 +703,17 @@ function gero_endpoint_guardar_interacciones_UNITEC_02( WP_REST_Request $request
     $texto_guardar .= "\n---\n";
     
     // Buscar si ya existe registro para este usuario
-    $registro_existente = $wpdb->get_row( $wpdb->prepare(
-        "SELECT id, conversation_string FROM byw_coach_interacciones WHERE user_id = %d LIMIT 1",
-        $user_id
-    ) );
-    
-    if ( $registro_existente ) {
-        // Append al conversation_string existente
-        $nuevo_conversation = $registro_existente->conversation_string . $texto_guardar;
-        $resultado = $wpdb->update(
-            'byw_coach_interacciones',
-            [ 'conversation_string' => $nuevo_conversation ],
-            [ 'id' => $registro_existente->id ]
-        );
-        $insert_id = $registro_existente->id;
-    } else {
-        // Crear nuevo registro
-        $resultado = $wpdb->insert(
-            'byw_coach_interacciones',
-            [
-                'user_id'             => $user_id,
-                'value_validador'     => $matricula,
-                'conversation_string' => $texto_guardar,
-                'created_at'          => current_time( 'mysql' ),
-            ]
-        );
-        $insert_id = $wpdb->insert_id;
-    }
+        $resultado = gero_append_conversation_UNITEC_02($user_id,$matricula,$texto_guardar);
+
+    // obtener id del registro (opcional, si lo usás)
+    $registro = $wpdb->get_row(
+        $wpdb->prepare(
+            "SELECT id FROM byw_coach_interacciones WHERE user_id = %d LIMIT 1",
+            $user_id
+        )
+    );
+    $insert_id = $registro->id ?? null;
+
     
     if ( $resultado === false ) {
         error_log( 'Error guardar interaccion: ' . $wpdb->last_error );
@@ -741,7 +740,7 @@ add_action( 'rest_api_init', function () {
     register_rest_route( GERO_API_NAMESPACE, '/chat-openai-agente', [
         'methods'             => 'POST',
         'callback'            => 'gero_endpoint_chat_openai_UNITEC_02',
-        'permission_callback' => '__return_true',
+        'permission_callback' => 'gero_api_permission_public_unitec_02',
     ] );
 } );
 
@@ -975,6 +974,18 @@ function gero_endpoint_chat_openai_UNITEC_02( WP_REST_Request $request ) {
             'role'    => 'system',
             'content' => $system_prompt,
         ],
+        [
+            'role'   => 'user',
+            'content' => "## CONTEXTO DEL ESTUDIANTE
+            Nombre: {$usuario->nombre}
+            Carrera: {$usuario->carrera}
+            Riesgos detectados: {$riesgos_lista}
+            Justificación del caso: {$resumen}
+            Número de interacciones previas: {$num_interacciones}
+            Fase actual del flujo: {$fase_instruccion}
+            {$contexto_desorientacion}
+            "
+        ]
     ];
     
     // Parsear conversation_string para extraer historial de chat
@@ -1108,16 +1119,26 @@ function gero_endpoint_chat_openai_UNITEC_02( WP_REST_Request $request ) {
         ], 500 );
     }
     
-    $response = wp_remote_post( 'https://api.openai.com/v1/chat/completions', [
-        'headers' => [
-            'Authorization' => 'Bearer ' . $api_key,
-            'Content-Type'  => 'application/json',
-        ],
-        'body'    => wp_json_encode( [
-            'model'    => 'gpt-4o',
-            'messages' => $messages,
-            'tools'    => $tools,
-            'tool_choice' => 'auto',
+    $response = wp_remote_post( 
+        'https://api.openai.com/v1/chat/completions', 
+        [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $api_key,
+                'Content-Type'  => 'application/json',
+            ],
+            'body'    => wp_json_encode( [
+                'model'    => $model,
+                'messages' => $messages,
+
+                // 🔒 CONTROL DE COMPORTAMIENTO
+                'temperature' => 0.3,
+                'presence_penalty' => -0.3,
+                'frequency_penalty' => 0.2,
+                'max_tokens' => 150,
+
+                // Tools solo si realmente los usás
+                'tools' => $tools ?? [],
+                'tool_choice' => empty($tools) ? 'none' : 'auto',
         ] ),
         'timeout' => 30,
     ] );
@@ -1133,6 +1154,24 @@ function gero_endpoint_chat_openai_UNITEC_02( WP_REST_Request $request ) {
     
     $body_response = json_decode( wp_remote_retrieve_body( $response ), true );
     
+    if (
+        empty( $body_response['choices'] ) ||
+        empty( $body_response['choices'][0]['message'] )
+    ) {
+        error_log(
+            '[GERO][OPENAI] Respuesta inesperada: ' .
+            wp_json_encode( $body_response )
+        );
+        return new WP_REST_Response(
+            [
+                'success' => false,
+                'error'   => 'openai_invalid_response',
+                'message' => 'No pudimos generar una respuesta en este momento. Intenta de nuevo.',
+            ],
+            500
+        );
+    }
+
     // Check if model wants to use a tool
     $tool_calls = $body_response['choices'][0]['message']['tool_calls'] ?? null;
     $reply = '';
@@ -1148,14 +1187,14 @@ function gero_endpoint_chat_openai_UNITEC_02( WP_REST_Request $request ) {
             $action = [
                 'type' => 'show_initial_questionnaire',
             ];
-            error_log( 'Tool activada: sugerir_cuestionario_inicial' );
+            error_log( '[GERO][OPENAI] Tool activada: sugerir_cuestionario_inicial' );
         } elseif ( $function_name === 'sugerir_cuestionario_orientacion' ) {
             $reply = $function_args['mensaje_introduccion'];
             $action = [
                 'type' => 'show_cr_questionnaire',
                 'motivo' => $function_args['motivo'],
             ];
-            error_log( 'Tool activada: sugerir_cuestionario_orientacion - ' . $function_args['motivo'] );
+            error_log( '[GERO][OPENAI] Tool activada: sugerir_cuestionario_orientacion - ' . $function_args['motivo'] );
         } elseif ( $function_name === 'sugerir_test_riasec' ) {
             $reply = $function_args['mensaje_introduccion'];
             $action = [
@@ -1166,7 +1205,7 @@ function gero_endpoint_chat_openai_UNITEC_02( WP_REST_Request $request ) {
     } else {
         // Normal text response
         if ( ! isset( $body_response['choices'][0]['message']['content'] ) ) {
-            error_log( 'Respuesta OpenAI invalida: ' . wp_json_encode( $body_response ) );
+            error_log( '[GERO][OPENAI] Respuesta OpenAI invalida: ' . wp_json_encode( $body_response ) );
             return new WP_REST_Response( [
                 'success' => false,
                 'error'   => 'respuesta_invalida',
@@ -1190,35 +1229,34 @@ function gero_endpoint_chat_openai_UNITEC_02( WP_REST_Request $request ) {
         $texto_interaccion .= "  action: " . wp_json_encode( $action ) . "\n";
     }
     if ( $crisis_detectada ) {
+        // 1. Desactivar tools
+        $tools = [];
+
+        // 2. Forzar modo crisis en el SYSTEM PROMPT
+        if ( isset( $messages[0]['content'] ) ) {
+            $messages[0]['content'] .=
+                "\n\n🚨 MODO CRISIS: Responde SOLO con contención emocional. " .
+                "NO sugieras cuestionarios, tests, recursos académicos ni decisiones administrativas.";
+        }
+
+        // 3. Log en la conversación
         $texto_interaccion .= "  [CRISIS_DETECTADA: {$nivel_crisis}]\n";
-        error_log( 'CRISIS en chat - Usuario: #' . $user_id . ' - Nivel: ' . $nivel_crisis );
+
+        error_log(
+            'CRISIS en chat - Usuario: #' . $user_id . ' - Nivel: ' . $nivel_crisis
+        );
     }
+
     $texto_interaccion .= "---\n";
     
     // Buscar si ya existe registro para este usuario
-    $registro_existente = $wpdb->get_row( $wpdb->prepare(
-        "SELECT id, conversation_string FROM byw_coach_interacciones WHERE user_id = %d LIMIT 1",
-        $user_id
-    ) );
-    
-    if ( $registro_existente ) {
-        // Append al conversation_string existente
-        $nuevo_conversation = $registro_existente->conversation_string . $texto_interaccion;
-        $wpdb->update(
-            'byw_coach_interacciones',
-            [ 'conversation_string' => $nuevo_conversation ],
-            [ 'id' => $registro_existente->id ]
-        );
-    } else {
-        // Crear nuevo registro
-        $wpdb->insert(
-            'byw_coach_interacciones',
-            [
-                'user_id'             => $user_id,
-                'value_validador'     => $matricula,
-                'conversation_string' => $texto_interaccion,
-                'created_at'          => current_time( 'mysql' ),
-            ]
+    $resultado = gero_append_conversation_UNITEC_02($user_id,$matricula,$texto_interaccion);
+
+    if ( $resultado === false ) {
+        error_log( 'Error al guardar interaccion: ' . $wpdb->last_error );
+        return new WP_REST_Response(
+            [ 'error' => 'Error al guardar interaccion' ],
+            500
         );
     }
     
@@ -1288,7 +1326,7 @@ add_action( 'rest_api_init', function () {
     register_rest_route( GERO_API_NAMESPACE, '/guardar-resultado-cr', [
         'methods'             => 'POST',
         'callback'            => 'gero_endpoint_guardar_resultado_cr_UNITEC_02',
-        'permission_callback' => '__return_true',
+        'permission_callback' => 'gero_api_permission_public_unitec_02',
     ] );
 } );
 
@@ -1323,30 +1361,13 @@ function gero_endpoint_guardar_resultado_cr_UNITEC_02( WP_REST_Request $request 
     $texto_cr .= "---\n";
     
     // Buscar si ya existe registro para este usuario
-    $registro_existente = $wpdb->get_row( $wpdb->prepare(
-        "SELECT id, conversation_string FROM byw_coach_interacciones WHERE user_id = %d LIMIT 1",
-        $user_id
-    ) );
-    
-    if ( $registro_existente ) {
-        // Append al conversation_string existente
-        $nuevo_conversation = $registro_existente->conversation_string . $texto_cr;
-        $wpdb->update(
-            'byw_coach_interacciones',
-            [ 'conversation_string' => $nuevo_conversation ],
-            [ 'id' => $registro_existente->id ]
-        );
-    } else {
-        // Crear nuevo registro
-        $wpdb->insert(
-            'byw_coach_interacciones',
-            [
-                'user_id'             => $user_id,
-                'value_validador'     => '',
-                'conversation_string' => $texto_cr,
-                'created_at'          => current_time( 'mysql' ),
-            ]
-        );
+    $resultado = gero_append_conversation_UNITEC_02($user_id,$matricula,$texto_cr);
+    if ( $resultado === false ) {
+        error_log( 'Error al guardar interaccion: ' . $wpdb->last_error );
+        return new WP_REST_Response(
+            [ 'error' => 'Error al guardar interaccion' ],
+            500
+        )
     }
     
     error_log( "CR Cuestionario - Usuario: #$user_id - C: $puntuacion_c, R: $puntuacion_r - Rama: $rama" );
@@ -1371,7 +1392,7 @@ add_action( 'rest_api_init', function () {
     register_rest_route( GERO_API_NAMESPACE, '/guardar-resultado-riasec', [
         'methods'             => 'POST',
         'callback'            => 'gero_endpoint_guardar_resultado_riasec_UNITEC_02',
-        'permission_callback' => '__return_true',
+        'permission_callback' => 'gero_api_permission_public_unitec_02',
     ] );
 } );
 
@@ -1494,7 +1515,7 @@ add_action( 'rest_api_init', function () {
     register_rest_route( GERO_API_NAMESPACE, '/last-conversation', [
         'methods'             => 'GET',
         'callback'            => 'gero_endpoint_last_conversation_UNITEC_02',
-        'permission_callback' => '__return_true',
+        'permission_callback' => 'gero_api_permission_public_unitec_02',
     ] );
 } );
 
