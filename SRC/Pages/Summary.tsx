@@ -20,7 +20,7 @@ const RISK_TO_ROUTE: Record<string, string> = {
   social: "/route-e",
   organizacion: "/route-f",
   tecnologica: "/route-g",
-  entorno: "/agent", // Default si no hay coincidencia
+  entorno: "/agent", // Default si no hay coincidencia 
 };
 
 export default function Summary() {
@@ -68,7 +68,7 @@ export default function Summary() {
         // Construir objeto de respuestas en formato esperado por backend
         const respuestasFormato: Record<string, string> = {};
         answersArray.forEach(([preguntaId, respuesta]) => {
-          respuestasFormato[preguntaId] = typeof respuesta.text === 'string' ? respuesta.text : respuesta.text.join(', ');
+          respuestasFormato[preguntaId] = respuesta.text || '';
         });
 
         // 1. Enviar respuestas al backend para procesamiento

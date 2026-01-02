@@ -51,6 +51,7 @@ export default function RouteA() {
   });
   const [typing, setTyping] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   // CONVERSACIÓN - Cargar historial de Home primero, luego RouteA si existe
   const [conversationHistory, setConversationHistory] = useState<{sender: 'agent'|'user', message: string}[]>(() => {
@@ -261,6 +262,7 @@ export default function RouteA() {
     }
     
     showTyping(400, () => setStep(1));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [riesgosDetectados, userId]);
 
   // HELPER

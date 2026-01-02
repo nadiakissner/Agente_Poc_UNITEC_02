@@ -59,54 +59,54 @@ export default function Questionnaire() {
   const validateNumericInput = (input: string): { valid: boolean; error?: string } => {
     const trimmed = input.trim().toLowerCase();
 
-    // Para P5 (text): aceptar texto libre sin restricción
-    if (currentQuestion?.id === 'P5') {
-      if (trimmed.length >= 3) {
-        return { valid: true };
-      }
-      return {
-        valid: false,
-        error: 'Por favor, describe tu fuente de financiamiento (mínimo 3 caracteres).'
-      };
-    }
+    // // Para P5 (text): aceptar texto libre sin restricción
+    // if (currentQuestion?.id === 'P5') {
+    //   if (trimmed.length >= 3) {
+    //     return { valid: true };
+    //   }
+    //   return {
+    //     valid: false,
+    //     error: 'Por favor, describe tu fuente de financiamiento (mínimo 3 caracteres).'
+    //   };
+    // }
 
-    // Para P7 (yesno): aceptar "si" o "no"
-    if (currentQuestion?.id === 'P7') {
-      if (trimmed === 'si' || trimmed === 'sí' || trimmed === 'no') {
-        return { valid: true };
-      }
-      return {
-        valid: false,
-        error: 'Por favor, escribe "Sí" o "No".'
-      };
-    }
+    // // Para P7 (yesno): aceptar "si" o "no"
+    // if (currentQuestion?.id === 'P7') {
+    //   if (trimmed === 'si' || trimmed === 'sí' || trimmed === 'no') {
+    //     return { valid: true };
+    //   }
+    //   return {
+    //     valid: false,
+    //     error: 'Por favor, escribe "Sí" o "No".'
+    //   };
+    // }
 
-    // Para preguntas likert: aceptar números 1-5
-    if (/^[1-5]$/.test(trimmed)) {
-      return { valid: true };
-    }
+    // // Para preguntas likert: aceptar números 1-5
+    // if (/^[1-5]$/.test(trimmed)) {
+    //   return { valid: true };
+    // }
 
-    // Si contiene solo dígitos pero está fuera del rango
-    if (/^\d+$/.test(trimmed)) {
-      return {
-        valid: false,
-        error: 'Por favor, ingresa un número del 1 al 5.'
-      };
-    }
+    // // Si contiene solo dígitos pero está fuera del rango
+    // if (/^\d+$/.test(trimmed)) {
+    //   return {
+    //     valid: false,
+    //     error: 'Por favor, ingresa un número del 1 al 5.'
+    //   };
+    // }
 
-    // Si es un mensaje corto inválido (contiene caracteres adicionales)
-    if (trimmed.length < 100) {
-      return {
-        valid: false,
-        error: 'Ingresá solo un número del 1 al 5, sin espacios ni otros caracteres.'
-      };
-    }
+    // // Si es un mensaje corto inválido (contiene caracteres adicionales)
+    // if (trimmed.length < 100) {
+    //   return {
+    //     valid: false,
+    //     error: 'Ingresá solo un número del 1 al 5, sin espacios ni otros caracteres.'
+    //   };
+    // }
 
-    // Si es un mensaje largo, mostrar contacto
-    return {
-      valid: false,
-      error: 'contact'
-    };
+    // // Si es un mensaje largo, mostrar contacto
+    // return {
+    //   valid: false,
+    //   error: 'contact'
+    // };
   };
 
   // Normalizar acentos y caracteres especiales
@@ -258,77 +258,77 @@ export default function Questionnaire() {
 
     setErrorMessage("");
 
-    // Respuesta válida: texto para P5, número 1-5 para otras likert, "sí"/"no" para P7
+    // // Respuesta válida: texto para P5, número 1-5 para otras likert, "sí"/"no" para P7
     let numericAnswer = userInput.trim();
     let displayAnswer = userInput.trim();
     
-    // Normalizar respuesta de P5 (texto libre)
-    if (currentQuestion.id === 'P5') {
-      numericAnswer = userInput.trim();
-      displayAnswer = userInput.trim();
-    }
+    // // Normalizar respuesta de P5 (texto libre)
+    // if (currentQuestion.id === 'P5') {
+    //   numericAnswer = userInput.trim();
+    //   displayAnswer = userInput.trim();
+    // }
     
-    // Normalizar respuesta de P7 (sí/no)
-    if (currentQuestion.id === 'P7') {
-      numericAnswer = numericAnswer.toLowerCase() === 'si' || numericAnswer.toLowerCase() === 'sí' ? 'Sí' : 'No';
-    }
+    // // Normalizar respuesta de P7 (sí/no)
+    // if (currentQuestion.id === 'P7') {
+    //   numericAnswer = numericAnswer.toLowerCase() === 'si' || numericAnswer.toLowerCase() === 'sí' ? 'Sí' : 'No';
+    // }
     
     // Detección de palabras clave para P5 (Financiación - Texto libre)
-    let selectedOption = currentQuestion?.options?.find(
+    const selectedOption = currentQuestion?.options?.find(
       opt => opt.text === numericAnswer || opt.text.startsWith(numericAnswer + ' ')
     );
     
-    // Para P5, detectar riesgo por palabras clave (no por opciones)
-    let p5RiskWeights: Partial<Record<RiskCategory, number>> | undefined;
-    if (currentQuestion.id === 'P5' && currentQuestion.keywordDetection) {
-      const detectedKey = detectKeywords(userInput, currentQuestion.keywordDetection);
-      if (detectedKey) {
-        // Usar los riskWeights de la palabra clave detectada
-        for (const [categoryName, data] of Object.entries(currentQuestion.keywordDetection)) {
-          if (data.keywords.some(keyword => userInput.toLowerCase().includes(keyword))) {
-            p5RiskWeights = data.riskWeights;
-            break;
-          }
-        }
-      }
-    }
+    // // Para P5, detectar riesgo por palabras clave (no por opciones)
+    // let p5RiskWeights: Partial<Record<RiskCategory, number>> | undefined;
+    // if (currentQuestion.id === 'P5' && currentQuestion.keywordDetection) {
+    //   const detectedKey = detectKeywords(userInput, currentQuestion.keywordDetection);
+    //   if (detectedKey) {
+    //     // Usar los riskWeights de la palabra clave detectada
+    //     for (const [categoryName, data] of Object.entries(currentQuestion.keywordDetection)) {
+    //       if (data.keywords.some(keyword => userInput.toLowerCase().includes(keyword))) {
+    //         p5RiskWeights = data.riskWeights;
+    //         break;
+    //       }
+    //     }
+    //   }
+    // }
 
-    // Manejar pesos condicionados para P6 (depende de P5)
-    let conditionalRiskWeights: Partial<Record<RiskCategory, number>> | undefined;
-    if (currentQuestion.id === 'P6' && currentQuestion.conditionalWeights) {
-      const p5Answer = answers.get('P5');
-      if (p5Answer) {
-        // Detectar categoría de P5 usando palabras clave
-        const p5Text = (p5Answer.text || '').toLowerCase();
-        let p5Category: string | null = null;
+    // // Manejar pesos condicionados para P6 (depende de P5)
+    // let conditionalRiskWeights: Partial<Record<RiskCategory, number>> | undefined;
+    // if (currentQuestion.id === 'P6' && currentQuestion.conditionalWeights) {
+    //   const p5Answer = answers.get('P5');
+    //   if (p5Answer) {
+    //     // Detectar categoría de P5 usando palabras clave
+    //     const p5Text = (Array.isArray(p5Answer.text) ? p5Answer.text.join(' ') : (p5Answer.text || '')).toLowerCase();
+    //     let p5Category: string | null = null;
         
-        // Buscar coincidencias con las palabras clave definidas en questionnaire.ts
-        const p5Question = questionnaireData.find(q => q.id === 'P5');
-        if (p5Question?.keywordDetection) {
-          for (const [category, data] of Object.entries(p5Question.keywordDetection)) {
-            if (data.keywords.some(keyword => p5Text.includes(keyword))) {
-              p5Category = category;
-              break;
-            }
-          }
-        }
+    //     // Buscar coincidencias con las palabras clave definidas en questionnaire.ts
+    //     const p5Question = questionnaireData.find(q => q.id === 'P5');
+    //     if (p5Question?.keywordDetection) {
+    //       for (const [category, data] of Object.entries(p5Question.keywordDetection)) {
+    //         if (data.keywords.some(keyword => p5Text.includes(keyword))) {
+    //           p5Category = category;
+    //           break;
+    //         }
+    //       }
+    //     }
         
-        if (p5Category && currentQuestion.conditionalWeights.P5?.[p5Category]) {
-          conditionalRiskWeights = currentQuestion.conditionalWeights.P5[p5Category][numericAnswer];
-        }
-      }
-    }
+    //     if (p5Category && currentQuestion.conditionalWeights.P5?.[p5Category]) {
+    //       conditionalRiskWeights = currentQuestion.conditionalWeights.P5[p5Category][numericAnswer];
+    //     }
+    //   }
+    // }
 
-    const newAnswers = new Map(answers);
-    newAnswers.set(currentQuestion.id, {
-      text: numericAnswer,
-      risk: selectedOption?.risk,
-      weight: selectedOption?.weight,
-      riskWeights: currentQuestion.id === 'P5' 
-        ? p5RiskWeights 
-        : (conditionalRiskWeights || selectedOption?.riskWeights),
-    });
-    setAnswers(newAnswers);
+    // const newAnswers = new Map(answers);
+    // newAnswers.set(currentQuestion.id, {
+    //   text: numericAnswer,
+    //   risk: selectedOption?.risk,
+    //   weight: selectedOption?.weight,
+    //   riskWeights: currentQuestion.id === 'P5' 
+    //     ? p5RiskWeights 
+    //     : (conditionalRiskWeights || selectedOption?.riskWeights),
+    // });
+    // setAnswers(newAnswers);
 
     // Guardar la interacción en el backend
     saveQuestionnaireInteraction(currentQuestion.id, displayAnswer);

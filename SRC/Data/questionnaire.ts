@@ -60,7 +60,7 @@ export const questionnaireData: Question[] = [
   {
     id: 'P2',
     text: 'A veces hay algo puntual que nos inquieta. ¿Qué factores generan esas inquietudes? Selecciona el más importante para ti',
-    type: 'chips',
+    type: 'chips-text',
     options: [
       { text: 'Me preocupa el factor económico porque no estoy seguro/a de poder cubrir la carrera.', riskWeights: { economica: 4 } },
       { text: 'No estoy seguro de si elegí bien la carrera o de por qué quiero estudiar', riskWeights: { desorientacion: 4} },
@@ -68,6 +68,9 @@ export const questionnaireData: Question[] = [
       { text: 'Siento que no estoy preparado/a para enfrentar el nivel académico de la uni', riskWeights: { baja_preparacion: 4 } },
     ],
   },
+];
+
+  // Preguntas anteriores comentadas - Omitidas del flujo
   // {
   //   id: 'P1',
   //   text: 'En una escala del 1 al 5, siendo 1 "muy indeciso/a" y 5 "muy seguro/a", ¿qué tan seguro/a estás de tus ganas de estudiar y de la carrera que elegiste?',
@@ -223,7 +226,6 @@ export const questionnaireData: Question[] = [
   //     { text: '5', riskWeights: {} },
   //   ],
   // },
-];
 
 export const riskPriority: RiskCategory[] = [
   'emocional',

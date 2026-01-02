@@ -8,6 +8,12 @@ export interface AlternativeRoute {
 
 export const alternativeRoutes: AlternativeRoute[] = [
   {
+    id: 'routeA',
+    title: 'Claridad de rumbo',
+    description: 'Explora tus intereses y fortalezas para tomar decisiones informadas sobre tu carrera.',
+    path: '/routeA'
+  },
+  {
     id: 'routeB',
     title: 'Manejo Académico',
     description: 'Fortalece tus habilidades de estudio y organización académica con estrategias personalizadas.',
